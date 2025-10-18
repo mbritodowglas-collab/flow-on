@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 60">
+  <rect width="240" height="60" fill="none"/>
+  <text x="50%" y="50%" text-anchor="middle" dominant-baseline="central"
+        font-family="Poppins, sans-serif" font-size="28"
+        font-weight="600" fill="#e0a96d" letter-spacing="1">
+    Flow On
+  </text>
+  <circle cx="210" cy="30" r="5" fill="#e0a96d" />
+</svg>
