@@ -1,524 +1,450 @@
-<!DOCTYPE html><html lang="pt-br">\>
+<!DOCTYPE html><html lang="pt-br">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Flow On — v0 • Planner de Conteúdo + Bullet Journal</title>
+  <title>Flow On — v1 • SPA</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Open+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700&family=Open+Sans:wght@300;400;600&display=swap" rel="stylesheet">
   <style>
-    :root{
-      --bg:#0b0b0b; --card:#121212; --muted:#1c1c1c; --brand:#e32526; --gold:#e0a96d; --text:#f5f5f5;
-    }
-    html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Open Sans',system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue','Noto Sans',Ubuntu,'Apple Color Emoji','Segoe UI Emoji','Segoe UI Symbol';}
+    :root{ --bg:#0b0b0b; --card:#121212; --muted:#1c1c1c; --brand:#e32526; --gold:#e0a96d; --text:#f5f5f5; }
+    html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Open Sans',system-ui,Roboto}
     .title{font-family:'Montserrat',sans-serif}
     .glass{background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02));backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.06)}
-    .brand{color:var(--gold)}
-    .btn{background:var(--muted);border:1px solid rgba(255,255,255,.08)}
+    .btn{background:#151515;border:1px solid rgba(255,255,255,.08)}
     .btn:hover{border-color:rgba(255,255,255,.18)}
-    .badge{background:#141414; border:1px solid rgba(255,255,255,.06);}
-    .status{border-left-width:6px}
-    .ring-brand{box-shadow:0 0 0 2px rgba(224,169,109,.35)}
+    .badge{background:#141414;border:1px solid rgba(255,255,255,.06)}
     input,select,textarea{background:#121212;border:1px solid rgba(255,255,255,.08);border-radius:.6rem;padding:.6rem .8rem}
-    textarea{min-height:120px}
     .divider{border-top:1px dashed rgba(255,255,255,.08)}
+    .ring-dot{width:22px;height:22px;border-radius:9999px;border:2px solid rgba(255,255,255,.15);display:grid;place-items:center;}
+    .ring-dot.done{border-color:#22c55e;box-shadow:0 0 0 2px rgba(34,197,94,.25)} /* aro verde */
   </style>
 </head>
 <body>
-  <!-- Topbar -->
-  <header class="sticky top-0 z-50 bg-black/60 backdrop-blur border-b border-white/10">
+  <!-- NAV -->
+  <header class="sticky top-0 z-40 bg-black/60 backdrop-blur border-b border-white/10">
     <div class="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3">
       <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-red-600 to-amber-400 grid place-items-center text-black font-bold">ON</div>
-      <h1 class="title text-lg sm:text-xl">Flow On <span class="text-white/60">— v0</span></h1>
-      <div class="ml-auto flex gap-2">
-        <button id="btnNewTheme" class="btn px-3 py-2 rounded-lg text-sm">+ Novo Tema</button>
-        <button id="btnDailyLog" class="btn px-3 py-2 rounded-lg text-sm">+ Daily Log</button>
-        <button id="btnExportJSON" class="btn px-3 py-2 rounded-lg text-sm">Exportar .json</button>
-        <label class="btn px-3 py-2 rounded-lg text-sm cursor-pointer">Importar .json
-          <input id="importJSON" type="file" accept="application/json" class="hidden" />
-        </label>
-      </div>
+      <h1 class="title text-lg">Flow On <span class="text-white/50">— v1</span></h1>
+      <nav class="ml-auto flex gap-2">
+        <a href="#/" class="btn px-3 py-2 rounded-md text-sm" data-link>🏠 Home</a>
+        <a href="#/journal" class="btn px-3 py-2 rounded-md text-sm" data-link>📓 Journal</a>
+        <a href="#/themes" class="btn px-3 py-2 rounded-md text-sm" data-link>🎬 Temas</a>
+      </nav>
     </div>
-  </header>  <!-- Main -->  <main class="max-w-7xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <!-- LEFT: Dashboard / Ciclo 90 dias -->
-    <section class="glass rounded-2xl p-5 lg:col-span-2">
-      <div class="flex items-center gap-3 mb-4">
-        <h2 class="title text-xl">Painel do Ciclo (90 dias)</h2>
-        <span id="cycleLabel" class="text-xs px-2 py-1 rounded badge">—</span>
-        <div class="ml-auto flex items-center gap-2 text-sm">
-          <span class="opacity-70">Faltam</span>
-          <span id="daysLeft" class="px-2 py-1 rounded bg-black/50">—</span>
-          <span class="opacity-70">dias</span>
+  </header>  <!-- ROOT -->  <main id="app" class="max-w-7xl mx-auto px-4 py-6"></main>  <template id="homeTpl">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Habit Tracker Semana -->
+      <section class="glass rounded-2xl p-5 lg:col-span-1">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="title text-lg">Hábitos (semana)</h2>
+          <a href="#/journal?tab=habits" class="text-xs underline">abrir hábitos</a>
         </div>
-      </div>
-      <!-- KPIs -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
-        <div class="rounded-xl p-4 bg-[#101010] border border-white/5">
-          <div class="text-xs opacity-70">Peças publicadas</div>
-          <div id="kpiPosts" class="title text-2xl">0</div>
+        <div id="homeHabits"></div>
+      </section>
+      <!-- Agenda Conteúdo Semana -->
+      <section class="glass rounded-2xl p-5 lg:col-span-1">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="title text-lg">Agenda de Conteúdo</h2>
+          <a href="#/themes" class="text-xs underline">abrir temas</a>
         </div>
-        <div class="rounded-xl p-4 bg-[#101010] border border-white/5">
-          <div class="text-xs opacity-70">Constância (%)</div>
-          <div id="kpiConsistency" class="title text-2xl">0%</div>
+        <div id="homeContent"></div>
+      </section>
+      <!-- Agenda BJ Semana -->
+      <section class="glass rounded-2xl p-5 lg:col-span-1">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="title text-lg">Agenda do Journal</h2>
+          <a href="#/journal" class="text-xs underline">abrir journal</a>
         </div>
-        <div class="rounded-xl p-4 bg-[#101010] border border-white/5">
-          <div class="text-xs opacity-70">Hábito sólido</div>
-          <div id="kpiHabit" class="title text-2xl">—</div>
-        </div>
-        <div class="rounded-xl p-4 bg-[#101010] border border-white/5">
-          <div class="text-xs opacity-70">Humor médio</div>
-          <div id="kpiMood" class="title text-2xl">—</div>
-        </div>
-      </div>
-      <!-- Road / Bars -->
-      <div class="space-y-3">
-        <div class="flex items-center justify-between text-sm"><span>Meta YT (vídeos)</span><span id="barYTLabel">0 / 0</span></div>
-        <div class="w-full h-2 bg-white/10 rounded-full"><div id="barYT" class="h-2 bg-gradient-to-r from-red-600 to-amber-400 rounded-full" style="width:0%"></div></div>
-        <div class="flex items-center justify-between text-sm mt-3"><span>Posts IG</span><span id="barIGLabel">0 / 0</span></div>
-        <div class="w-full h-2 bg-white/10 rounded-full"><div id="barIG" class="h-2 bg-gradient-to-r from-red-600 to-amber-400 rounded-full" style="width:0%"></div></div>
-      </div>
-    </section><!-- RIGHT: Hoje / Hábitos -->
-<aside class="glass rounded-2xl p-5 space-y-5">
-  <h3 class="title text-lg">Hoje</h3>
-  <div class="text-sm opacity-80" id="todayDate">—</div>
-  <div class="divider my-3"></div>
-  <div>
-    <div class="title text-sm mb-2">Hábitos (semana)</div>
-    <div id="habitList" class="space-y-2"></div>
-    <button id="btnAddHabit" class="mt-3 btn px-3 py-2 rounded-lg text-sm">+ Hábito</button>
-  </div>
-  <div class="divider my-4"></div>
-  <div>
-    <div class="title text-sm mb-2">Atalhos</div>
-    <div class="flex flex-wrap gap-2">
-      <button id="btnNewIdea" class="btn px-3 py-2 rounded-lg text-sm">+ Capturar ideia</button>
-      <button id="btnWeeklyReview" class="btn px-3 py-2 rounded-lg text-sm">Revisão semanal</button>
+        <div id="homeJournal"></div>
+      </section>
     </div>
-  </div>
-</aside>
-
-<!-- THEMES -->
-<section class="glass rounded-2xl p-5 lg:col-span-2">
-  <div class="flex items-center gap-3 mb-4">
-    <h2 class="title text-xl">Temas & Roteiros</h2>
-    <div class="ml-auto flex items-center gap-2 text-sm">
-      <select id="filterStatus" class="text-sm">
-        <option value="">Todos</option>
+  </template>  <template id="journalTpl">
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <aside class="lg:col-span-1">
+        <div class="glass rounded-2xl p-4 space-y-2">
+          <a data-tab="habits" class="tab btn w-full px-3 py-2 rounded-md text-left">Hábitos</a>
+          <a data-tab="daily" class="tab btn w-full px-3 py-2 rounded-md text-left">Daily Log</a>
+          <a data-tab="monthly" class="tab btn w-full px-3 py-2 rounded-md text-left">Monthly Log</a>
+          <a data-tab="quarter" class="tab btn w-full px-3 py-2 rounded-md text-left">Trimestral Log</a>
+        </div>
+      </aside>
+      <section class="lg:col-span-3">
+        <div id="journalView"></div>
+      </section>
+    </div>
+  </template>  <template id="themesTpl">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Ideias -->
+      <section class="glass rounded-2xl p-5">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="title text-lg">Banco de Ideias</h2>
+          <button id="btnAddIdea" class="btn px-3 py-2 rounded-md text-sm">+ Ideia</button>
+        </div>
+        <div id="ideasList" class="space-y-2"></div>
+      </section>
+      <!-- Rascunhos -->
+      <section class="glass rounded-2xl p-5">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="title text-lg">Rascunhos</h2>
+        </div>
+        <div id="draftsList" class="space-y-2"></div>
+      </section>
+      <!-- Agenda de Publicação (semana) -->
+      <section class="glass rounded-2xl p-5">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="title text-lg">Publicação (semana)</h2>
+          <button id="btnNewTheme" class="btn px-3 py-2 rounded-md text-sm">+ Novo Tema</button>
+        </div>
+        <div id="weekPub" class="space-y-2"></div>
+      </section>
+    </div><!-- Modal simples de Tema -->
+<dialog id="modalTheme" class="rounded-2xl p-0 w-[min(900px,96vw)] bg-[#0f0f0f] text-white">
+  <form method="dialog">
+    <div class="p-4 border-b border-white/10 flex items-center">
+      <h3 class="title text-lg">Tema</h3>
+      <button class="ml-auto px-3 py-1.5 btn rounded-md">Fechar</button>
+    </div>
+  </form>
+  <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[70vh] overflow-y-auto">
+    <div class="space-y-3">
+      <input id="fTitulo" placeholder="Título" class="w-full"/>
+      <input id="fPersona" placeholder="Persona" class="w-full"/>
+      <input id="fObjetivo" placeholder="Objetivo/CTA" class="w-full"/>
+      <label class="text-sm opacity-70">Datas</label>
+      <div class="grid grid-cols-2 gap-2">
+        <input id="dGravacao" type="date"/>
+        <input id="dPublicacao" type="date"/>
+      </div>
+      <label class="text-sm opacity-70">Plataformas</label>
+      <div class="flex gap-3 text-sm">
+        <label class="inline-flex items-center gap-2"><input type="checkbox" id="pYT">YouTube</label>
+        <label class="inline-flex items-center gap-2"><input type="checkbox" id="pIG">Instagram</label>
+        <label class="inline-flex items-center gap-2"><input type="checkbox" id="pBlog">Blog</label>
+      </div>
+      <label class="text-sm opacity-70">Status</label>
+      <select id="fStatus" class="w-full">
+        <option>Ideia</option>
         <option>Rascunho</option>
         <option>Em gravação</option>
         <option>Em edição</option>
         <option>Publicado</option>
       </select>
-      <input id="searchThemes" placeholder="Buscar tema…" class="text-sm" />
+    </div>
+    <div class="space-y-3">
+      <label class="text-sm title">Roteiro — YouTube</label>
+      <textarea id="rYT" placeholder="Título, thumb, intro 30s, tópicos, CTA" class="w-full min-h-[120px]"></textarea>
+      <label class="text-sm title">Reels/Stories</label>
+      <textarea id="rReels" placeholder="Hook, micro-roteiro, CTA" class="w-full min-h-[120px]"></textarea>
     </div>
   </div>
-  <div id="themesList" class="grid gap-3"></div>
-</section>
-
-<!-- JOURNAL -->
-<section class="glass rounded-2xl p-5">
-  <div class="flex items-center gap-3 mb-3">
-    <h2 class="title text-xl">Bullet Journal</h2>
-    <button id="btnNewDaily" class="btn px-3 py-1.5 rounded-md text-sm ml-auto">+ Daily Log</button>
+  <div class="p-4 border-t border-white/10 flex items-center gap-3">
+    <button id="btnSaveTheme" class="btn px-4 py-2 rounded-lg">Salvar</button>
+    <div class="ml-auto text-sm opacity-70" id="themeIdInfo"></div>
   </div>
-  <div class="space-y-4" id="journalList"></div>
-</section>
+</dialog>
 
-<!-- AGENDA -->
-<section class="glass rounded-2xl p-5 lg:col-span-3">
-  <div class="flex items-center gap-3 mb-4">
-    <h2 class="title text-xl">Agenda (ideação • gravação • edição • publicação)</h2>
-    <div class="ml-auto flex items-center gap-2 text-sm">
-      <input id="agendaMonth" type="month" class="text-sm" />
-    </div>
-  </div>
-  <div id="agendaGrid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2"></div>
-</section>
-
-  </main>  <!-- MODALS -->  <dialog id="modalTheme" class="rounded-2xl p-0 w-[min(900px,96vw)] bg-[#0f0f0f] text-white">
-    <form method="dialog">
-      <div class="p-4 border-b border-white/10 flex items-center">
-        <h3 class="title text-lg" id="modalThemeTitle">Novo tema</h3>
-        <button class="ml-auto px-3 py-1.5 btn rounded-md">Fechar</button>
-      </div>
-    </form>
-    <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[70vh] overflow-y-auto">
-      <div class="space-y-3">
-        <input id="fTitulo" placeholder="Título do tema" class="w-full"/>
-        <input id="fPersona" placeholder="Persona (ex: Mulheres 30+)" class="w-full"/>
-        <input id="fObjetivo" placeholder="Objetivo/CTA (ex: Avaliação Bella Prime)" class="w-full"/>
-        <input id="fTags" placeholder="Tags (separadas por vírgula)" class="w-full"/>
-        <label class="block text-sm opacity-80">Plataformas</label>
-        <div class="flex flex-wrap gap-2 text-sm">
-          <label class="inline-flex items-center gap-2"><input type="checkbox" value="YouTube" id="pYT">YouTube</label>
-          <label class="inline-flex items-center gap-2"><input type="checkbox" value="Instagram" id="pIG">Instagram</label>
-          <label class="inline-flex items-center gap-2"><input type="checkbox" value="Blog" id="pBlog">Blog</label>
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-sm opacity-70">Ideação</label>
-            <input id="dIdeacao" type="date" class="w-full"/>
-          </div>
-          <div>
-            <label class="block text-sm opacity-70">Gravação</label>
-            <input id="dGravacao" type="date" class="w-full"/>
-          </div>
-          <div>
-            <label class="block text-sm opacity-70">Edição</label>
-            <input id="dEdicao" type="date" class="w-full"/>
-          </div>
-          <div>
-            <label class="block text-sm opacity-70">Publicação</label>
-            <input id="dPublicacao" type="date" class="w-full"/>
-          </div>
-        </div>
-        <div>
-          <label class="block text-sm opacity-70">Status</label>
-          <select id="fStatus" class="w-full">
-            <option>Rascunho</option>
-            <option>Em gravação</option>
-            <option>Em edição</option>
-            <option>Publicado</option>
-          </select>
-        </div>
-      </div>
-      <div class="space-y-4">
-        <div>
-          <label class="block text-sm title">Roteiro — YouTube</label>
-          <textarea id="rYT" placeholder="Título, thumb, intro 30s, tópicos, CTA" class="w-full"></textarea>
-        </div>
-        <div>
-          <label class="block text-sm title">Roteiro — Reels/Stories</label>
-          <textarea id="rReels" placeholder="Hook, micro-roteiro, CTA" class="w-full"></textarea>
-        </div>
-        <div>
-          <label class="block text-sm title">Roteiro — Carrossel</label>
-          <textarea id="rCarrossel" placeholder="Slides 1–10 + CTA" class="w-full"></textarea>
-        </div>
-        <div>
-          <label class="block text-sm title">Roteiro — Estático</label>
-          <textarea id="rEstatico" placeholder="Headline, copy, hashtags" class="w-full"></textarea>
-        </div>
-      </div>
-    </div>
-    <div class="p-4 border-t border-white/10 flex items-center gap-3">
-      <button id="btnSaveTheme" class="btn px-4 py-2 rounded-lg">Salvar</button>
-      <button id="btnExportMD" class="btn px-4 py-2 rounded-lg">Exportar .md</button>
-      <div class="ml-auto text-sm opacity-70" id="themeIdInfo"></div>
-    </div>
-  </dialog>  <dialog id="modalDaily" class="rounded-2xl p-0 w-[min(800px,96vw)] bg-[#0f0f0f] text-white">
-    <form method="dialog">
-      <div class="p-4 border-b border-white/10 flex items-center">
-        <h3 class="title text-lg">Daily Log</h3>
-        <button class="ml-auto px-3 py-1.5 btn rounded-md">Fechar</button>
-      </div>
-    </form>
-    <div class="p-4 space-y-3">
-      <div class="grid md:grid-cols-2 gap-3">
-        <input id="dlDate" type="date" class="w-full"/>
-        <input id="dlFoco" placeholder="Foco do dia (1 frase)" class="w-full"/>
-      </div>
-      <input id="dlMITs" placeholder="3 MITs (separe por ;)" class="w-full"/>
-      <textarea id="dlConteudo" placeholder="Conteúdo do dia (roteiro X, gravação Y)"></textarea>
-      <div class="grid md:grid-cols-3 gap-3">
-        <input id="dlTreino" placeholder="Treino"/>
-        <input id="dlNutricao" placeholder="Nutrição"/>
-        <input id="dlSono" placeholder="Sono (h)"/>
-      </div>
-      <input id="dlGratidao" placeholder="Gratidão (3 itens, ;)"/>
-      <textarea id="dlReflexao" placeholder="Reflexão PM (2–4 linhas)"></textarea>
-      <div class="grid md:grid-cols-2 gap-3">
-        <input id="dlHumor" type="number" min="1" max="10" placeholder="Humor (1-10)"/>
-        <button id="btnSaveDaily" class="btn px-4 py-2 rounded-lg">Salvar Daily</button>
-      </div>
-    </div>
-  </dialog>  <script>
-    // ---------------- Core Store ----------------
-    const STORE_KEY = 'flowon.data.v0';
-    const today = new Date();
-
+  </template>  <script>
+    // ====== State (LocalStorage) ======
+    const STORE_KEY = 'flowon.v1';
     const Data = {
-      _state: { themes: [], journal:{daily:[], weekly:[], monthly:[]}, habitos:[], metas:{yt:24, ig:60}, ciclo:{inicio:null,fim:null} },
-      load(){
-        try{ const raw = localStorage.getItem(STORE_KEY); if(raw){ this._state = JSON.parse(raw) }
-          // seed inicial
-          if(!this._state.ciclo.inicio){
-            const start = new Date(today.getFullYear(), Math.floor(today.getMonth()/3)*3, 1)
-            const end = new Date(start.getFullYear(), start.getMonth()+3, 0)
-            this._state.ciclo = {inicio:start.toISOString().slice(0,10), fim:end.toISOString().slice(0,10)}
-          }
-          if(!this._state.themes.length){
-            this._state.themes.push({
-              id: 't_'+Date.now(), titulo:'Frequência ideal de treino', persona:'Mulheres 30+', objetivo:'Levar para avaliação Bella Prime',
-              tags:['treino','emagrecimento'], plataformas:['YouTube','Instagram','Blog'],
-              roteiros:{ youtube:'Título/Thumb/Intro/Tópicos/CTA', reels:'Hook + micro-roteiro + CTA', carrossel:'Slides 1–10 + CTA', estatico:'Headline/copy/hashtags' },
-              datas:{ ideacao: toISO(today), gravacao:'', edicao:'', publicacao:''}, status:'Rascunho', checklist:{thumb:false,legenda:false,agendado:false}, arquivado:false
-            })
-          }
-        }catch(e){ console.error('load error', e) }
-      },
-      save(){ localStorage.setItem(STORE_KEY, JSON.stringify(this._state)) },
-      state(){ return this._state }
+      _s: { habits: [], journal: { daily: [] }, themes: [] },
+      load(){ try{ const raw = localStorage.getItem(STORE_KEY); if(raw) this._s = JSON.parse(raw); if(!this._s.habits.length){ this._s.habits = [ {id:'h1', name:'Planejar dia anterior'}, {id:'h2', name:'Treinar'}, {id:'h3', name:'Meditar 5 min'} ]; } if(!this._s.themes.length){ this._s.themes=[{id:'t1', title:'Dopamina e motivação no treino', persona:'Mulheres 30+', objetivo:'Levar para avaliação', status:'Rascunho', platforms:['YouTube','Instagram'], dates:{ gravacao:'', publicacao:'' }, scripts:{ yt:'', reels:'' }}]; } }catch(e){ console.error(e) } },
+      save(){ localStorage.setItem(STORE_KEY, JSON.stringify(this._s)) },
+      get(){ return this._s }
     }
 
-    function toISO(d){ return new Date(d).toISOString().slice(0,10) }
-
-    // ---------------- UI Helpers ----------------
-    function el(html){ const t=document.createElement('template'); t.innerHTML=html.trim(); return t.content.firstElementChild }
-    function pct(a,b){ return b? Math.min(100, Math.round((a/b)*100)) : 0 }
-
-    // ---------------- Render: Dashboard ----------------
-    function renderDashboard(){
-      const s = Data.state();
-      const start = new Date(s.ciclo.inicio), end = new Date(s.ciclo.fim);
-      const daysLeft = Math.max(0, Math.ceil((end - today)/(1000*60*60*24)));
-      document.getElementById('daysLeft').textContent = daysLeft;
-      const label = start.toLocaleDateString('pt-BR', {month:'short'})+ '–' + end.toLocaleDateString('pt-BR', {month:'short', year:'numeric'})
-      document.getElementById('cycleLabel').textContent = label.toUpperCase()
-
-      // KPIs simples
-      const publicados = s.themes.filter(t=>t.status==='Publicado').length
-      document.getElementById('kpiPosts').textContent = publicados
-      const concluidos = s.themes.filter(t=>['Em edição','Publicado'].includes(t.status)).length
-      document.getElementById('kpiConsistency').textContent = pct(concluidos, s.themes.length)+'%'
-      document.getElementById('kpiHabit').textContent = s.habitos[0]?.nome || '—'
-
-      const moods = s.journal.daily.map(d=>Number(d.humor)).filter(Boolean)
-      const avgMood = moods.length? (moods.reduce((a,b)=>a+b,0)/moods.length).toFixed(1): '—'
-      document.getElementById('kpiMood').textContent = avgMood
-
-      // Barras metas
-      const ytTarget = s.metas.yt||0; const ytDone = s.themes.filter(t=>t.plataformas?.includes('YouTube') && t.status==='Publicado').length
-      document.getElementById('barYTLabel').textContent = `${ytDone} / ${ytTarget}`
-      document.getElementById('barYT').style.width = pct(ytDone, ytTarget)+'%'
-
-      const igTarget = s.metas.ig||0; const igDone = s.themes.filter(t=>t.plataformas?.includes('Instagram') && t.status==='Publicado').length
-      document.getElementById('barIGLabel').textContent = `${igDone} / ${igTarget}`
-      document.getElementById('barIG').style.width = pct(igDone, igTarget)+'%'
-
-      // Hoje
-      document.getElementById('todayDate').textContent = new Date().toLocaleDateString('pt-BR', {weekday:'long', day:'2-digit', month:'short'})
+    // ====== Utils ======
+    const toISO = d => new Date(d).toISOString().slice(0,10)
+    const today = new Date()
+    function weekRange(date){
+      const d = new Date(date); const day = (d.getDay()+6)%7; // seg=0 ... dom=6
+      const monday = new Date(d); monday.setDate(d.getDate()-day)
+      const week = [...Array(7)].map((_,i)=>{ const x = new Date(monday); x.setDate(monday.getDate()+i); return toISO(x) })
+      return week
     }
 
-    // ---------------- Render: Habits ----------------
-    function renderHabits(){
-      const box = document.getElementById('habitList'); box.innerHTML=''
-      const s = Data.state();
-      if(!s.habitos.length){
-        box.append(el(`<div class='text-sm opacity-70'>Nenhum hábito ainda. Adicione o primeiro.</div>`))
-      }
-      s.habitos.forEach((h,idx)=>{
-        const item = el(`<div class='flex items-center justify-between gap-3 p-3 rounded-xl bg-[#101010] border border-white/5'>
-          <div>
-            <div class='title text-sm'>${h.nome}</div>
-            <div class='text-xs opacity-70'>Frequência: ${h.frequencia||'DIARIO'}</div>
-          </div>
-          <button class='text-xs px-2 py-1 btn rounded-md' data-del='${idx}'>Remover</button>
-        </div>`)
-        item.querySelector('[data-del]')?.addEventListener('click',()=>{ s.habitos.splice(idx,1); Data.save(); renderHabits() })
-        box.append(item)
-      })
+    // Track checks by week key "YYYY-W##"
+    function weekKey(date=new Date()){
+      const d=new Date(date); const onejan=new Date(d.getFullYear(),0,1); const week=Math.ceil((((d-onejan)/86400000)+onejan.getDay()+1)/7); return `${d.getFullYear()}-W${String(week).padStart(2,'0')}`
     }
 
-    // ---------------- Render: Themes ----------------
-    function renderThemes(){
-      const list = document.getElementById('themesList'); list.innerHTML=''
-      const s = Data.state();
-      const q = document.getElementById('searchThemes').value?.toLowerCase()||''
-      const fs = document.getElementById('filterStatus').value||''
-      s.themes
-        .filter(t=>!fs || t.status===fs)
-        .filter(t=>!q || t.titulo.toLowerCase().includes(q))
-        .sort((a,b)=> (b.datas?.publicacao||'').localeCompare(a.datas?.publicacao||''))
-        .forEach(t=>{
-          const statusColor = t.status==='Publicado'? 'border-green-600' : t.status==='Em edição'? 'border-amber-500' : t.status==='Em gravação'? 'border-red-500' : 'border-white/10'
-          const card = el(`<div class='status ${statusColor} rounded-xl p-4 bg-[#101010] border border-white/5'>
-            <div class='flex items-start gap-3'>
-              <div class='flex-1'>
-                <div class='flex items-center gap-3'>
-                  <h4 class='title text-base'>${t.titulo}</h4>
-                  <span class='badge text-xs px-2 py-0.5 rounded'>${t.status}</span>
-                </div>
-                <div class='text-xs opacity-70 mt-1'>${(t.plataformas||[]).join(' • ')}</div>
-                <div class='text-xs opacity-60 mt-2'>Pub.: ${t.datas?.publicacao||'—'}</div>
-              </div>
-              <div class='flex gap-2'>
-                <button class='btn px-2 py-1 rounded-md text-xs' data-open='${t.id}'>Abrir</button>
-                <button class='btn px-2 py-1 rounded-md text-xs' data-del='${t.id}'>Excluir</button>
-              </div>
-            </div>
-          </div>`)
-          card.querySelector('[data-open]')?.addEventListener('click',()=> openTheme(t.id))
-          card.querySelector('[data-del]')?.addEventListener('click',()=>{ if(confirm('Excluir tema?')){ s.themes = s.themes.filter(x=>x.id!==t.id); Data.save(); renderThemes(); renderDashboard(); } })
-          list.append(card)
+    // ====== Router ======
+    const routes = {
+      '/': renderHome,
+      '/journal': renderJournal,
+      '/themes': renderThemes
+    }
+
+    function router(){
+      const hash = location.hash.replace('#','') || '/'
+      const [path, qs] = hash.split('?')
+      const view = routes[path] || renderHome
+      view(Object.fromEntries(new URLSearchParams(qs)))
+    }
+
+    window.addEventListener('hashchange', router)
+
+    // ====== HOME ======
+    function renderHome(){
+      const app = document.getElementById('app');
+      app.innerHTML = document.getElementById('homeTpl').innerHTML
+      renderHomeHabits();
+      renderHomeContent();
+      renderHomeJournal();
+    }
+
+    function renderHomeHabits(){
+      const el = document.getElementById('homeHabits'); el.innerHTML=''
+      const s = Data.get();
+      const dates = weekRange(new Date())
+      s.habits.forEach(h=>{
+        const wk = weekKey()
+        h.checks = h.checks || {}; h.checks[wk] = h.checks[wk] || Array(7).fill(false)
+        const row = document.createElement('div')
+        row.className = 'flex items-center justify-between py-2 border-b border-white/5'
+        row.innerHTML = `<div class="text-sm">${h.name}</div>`
+        const dots = document.createElement('div'); dots.className='flex items-center gap-1'
+        h.checks[wk].forEach((v,i)=>{
+          const b = document.createElement('button'); b.className = 'ring-dot'+(v?' done':''); b.title = dates[i]
+          b.addEventListener('click',()=>{ h.checks[wk][i]=!h.checks[wk][i]; Data.save(); renderHomeHabits() })
+          dots.appendChild(b)
         })
+        const pct = Math.round(100 * h.checks[wk].filter(Boolean).length / 7)
+        const pctEl = document.createElement('div'); pctEl.className='text-xs opacity-70 w-10 text-right'; pctEl.textContent = pct+'%'
+        const right = document.createElement('div'); right.className='flex items-center gap-3'; right.appendChild(dots); right.appendChild(pctEl)
+        row.appendChild(right); el.appendChild(row)
+      })
+      Data.save()
     }
 
-    // ---------------- Theme Modal ----------------
-    let currentThemeId = null
-    function openTheme(id){
-      const s = Data.state();
-      const t = s.themes.find(x=>x.id===id) || { id:null, titulo:'', persona:'', objetivo:'', tags:[], plataformas:[], roteiros:{}, datas:{}, status:'Rascunho', checklist:{} }
-      currentThemeId = t.id
-      document.getElementById('modalThemeTitle').textContent = t.id? 'Editar tema' : 'Novo tema'
-      document.getElementById('themeIdInfo').textContent = t.id || 'novo'
-      // fields
-      fTitulo.value = t.titulo||''; fPersona.value = t.persona||''; fObjetivo.value = t.objetivo||''; fTags.value = (t.tags||[]).join(', ')
-      pYT.checked = !!t.plataformas?.includes('YouTube'); pIG.checked = !!t.plataformas?.includes('Instagram'); pBlog.checked = !!t.plataformas?.includes('Blog')
-      dIdeacao.value = t.datas?.ideacao||''; dGravacao.value = t.datas?.gravacao||''; dEdicao.value = t.datas?.edicao||''; dPublicacao.value = t.datas?.publicacao||''
-      fStatus.value = t.status||'Rascunho'
-      rYT.value = t.roteiros?.youtube||''; rReels.value = t.roteiros?.reels||''; rCarrossel.value = t.roteiros?.carrossel||''; rEstatico.value = t.roteiros?.estatico||''
-      modalTheme.showModal()
-    }
-
-    function saveTheme(){
-      const s = Data.state();
-      const obj = {
-        id: currentThemeId || ('t_'+Date.now()),
-        titulo: fTitulo.value.trim(), persona: fPersona.value.trim(), objetivo: fObjetivo.value.trim(),
-        tags: fTags.value? fTags.value.split(',').map(x=>x.trim()).filter(Boolean):[],
-        plataformas: [pYT.checked&&'YouTube', pIG.checked&&'Instagram', pBlog.checked&&'Blog'].filter(Boolean),
-        roteiros:{ youtube:rYT.value, reels:rReels.value, carrossel:rCarrossel.value, estatico:rEstatico.value },
-        datas:{ ideacao:dIdeacao.value, gravacao:dGravacao.value, edicao:dEdicao.value, publicacao:dPublicacao.value },
-        status: fStatus.value, checklist:{thumb:false,legenda:false,agendado:false}, arquivado:false
-      }
-      const idx = s.themes.findIndex(x=>x.id===obj.id)
-      if(idx>=0) s.themes[idx]=obj; else s.themes.push(obj)
-      Data.save(); modalTheme.close(); renderThemes(); renderDashboard(); buildAgenda()
-    }
-
-    // Export Markdown do tema atual (padrão Jekyll)
-    function exportCurrentMD(){
-      const s = Data.state(); const t = s.themes.find(x=>x.id===currentThemeId); if(!t) return alert('Tema não encontrado')
-      const slug = t.titulo.toLowerCase().normalize('NFD').replace(/[^\w\s-]/g,'').trim().replace(/\s+/g,'-')
-      const md = `---\nlayout: post\ntitle: "${t.titulo}"\ndate: ${t.datas?.publicacao||toISO(today)}\ncategories: [Treino, Bella Prime]\nimage: "/assets/img/posts/${slug}.jpg"\nexcerpt: "${(t.roteiros.estatico||'').split('\n')[0].slice(0,140)}"\nafiliados:\n  - title: "Foam Roller — Liberação miofascial"\n    url: "https://s.shopee.com.br/xxxxx"\n    image: "/assets/img/afiliados/thumb-default.jpg"\n---\n\n## Introdução\n${t.roteiros.youtube||''}\n\n## Reels/Stories\n${t.roteiros.reels||''}\n\n## Carrossel\n${t.roteiros.carrossel||''}\n\n## Post Estático\n${t.roteiros.estatico||''}\n`;
-      download(`${slug}.md`, md)
-    }
-
-    // ---------------- Journal ----------------
-    function openDaily(){
-      dlDate.value = toISO(today)
-      dlFoco.value = ''; dlMITs.value = ''; dlConteudo.value=''; dlTreino.value=''; dlNutricao.value=''; dlSono.value=''; dlGratidao.value=''; dlReflexao.value=''; dlHumor.value=''
-      modalDaily.showModal()
-    }
-    function saveDaily(){
-      const s=Data.state();
-      s.journal.daily.push({ id:'d_'+Date.now(), date: dlDate.value, foco: dlFoco.value, mits: dlMITs.value, conteudo: dlConteudo.value, treino: dlTreino.value, nutricao: dlNutricao.value, sono: dlSono.value, gratidao: dlGratidao.value, reflexao: dlReflexao.value, humor: dlHumor.value })
-      Data.save(); modalDaily.close(); renderJournal(); renderDashboard();
-    }
-    function renderJournal(){
-      const box = document.getElementById('journalList'); box.innerHTML=''
-      const s=Data.state();
-      s.journal.daily.slice(-7).reverse().forEach(d=>{
-        const card = el(`<div class='rounded-xl p-4 bg-[#101010] border border-white/5'>
-          <div class='flex items-center gap-3'><div class='title text-sm'>${new Date(d.date).toLocaleDateString('pt-BR')}</div>
-          <span class='badge text-xs px-2 py-0.5 rounded'>Humor: ${d.humor||'—'}</span></div>
-          <div class='text-sm mt-2'>Foco: ${d.foco||'—'}</div>
-          <div class='text-xs opacity-70 mt-1'>MITs: ${d.mits||'—'}</div>
-        </div>`)
-        box.append(card)
+    function renderHomeContent(){
+      const box = document.getElementById('homeContent'); box.innerHTML=''
+      const s = Data.get();
+      // próximos 7 dias por data de publicação
+      const dates = weekRange(new Date())
+      dates.forEach(d=>{
+        const items = s.themes.filter(t=> t.dates?.publicacao === d)
+        const day = document.createElement('div'); day.className='rounded-xl p-3 bg-[#101010] border border-white/5 mb-2'
+        day.innerHTML = `<div class='flex items-center justify-between mb-2'><span class='text-xs opacity-70'>${new Date(d).toLocaleDateString('pt-BR',{weekday:'short', day:'2-digit'})}</span><button class='btn text-[11px] px-2 py-0.5 rounded-md' data-add='${d}'>+ Tema</button></div>`
+        const list = document.createElement('div');
+        if(!items.length){ list.innerHTML = `<div class='text-xs opacity-50'>Sem itens</div>` }
+        items.forEach(t=>{
+          const tag = (t.platforms||[]).join(' • ')
+          const it = document.createElement('div'); it.className='text-xs px-2 py-1 rounded bg-black/40 border border-white/10 mb-1'
+          it.textContent = `${t.title} — ${tag}`
+          list.appendChild(it)
+        })
+        day.appendChild(list)
+        day.querySelector('[data-add]').addEventListener('click',()=>{ openThemeModal({dates:{publicacao:d}}) })
+        box.appendChild(day)
       })
     }
 
-    // ---------------- Agenda ----------------
-    function buildAgenda(){
-      const grid = document.getElementById('agendaGrid'); grid.innerHTML=''
-      const monthStr = document.getElementById('agendaMonth').value || toISO(today).slice(0,7)
-      const [y,m] = monthStr.split('-').map(Number)
-      const first = new Date(y, m-1, 1)
-      const last = new Date(y, m, 0)
-      for(let d=1; d<=last.getDate(); d++){
-        const dateISO = toISO(new Date(y, m-1, d))
-        const dayThemes = Data.state().themes.filter(t=> Object.values(t.datas||{}).includes(dateISO))
-        const items = dayThemes.map(t=>{
-          const fase = Object.entries(t.datas||{}).find(([k,v])=>v===dateISO)?.[0] || '—'
-          const faseLabel = {ideacao:'Ideação',gravacao:'Gravação',edicao:'Edição',publicacao:'Publicação'}[fase] || '—'
-          return `<button class='text-left w-full text-xs px-2 py-1 rounded mb-1 bg-black/40 border border-white/10 hover:border-white/20' data-open='${t.id}'>${faseLabel}: ${t.titulo}</button>`
-        }).join('')
-        const cell = el(`<div class='rounded-xl p-3 bg-[#101010] border border-white/5 min-h-[110px]'>
-            <div class='flex items-center justify-between mb-2'>
-              <span class='text-xs opacity-70'>${d.toString().padStart(2,'0')}/${String(m).padStart(2,'0')}</span>
-              <button class='text-[11px] px-2 py-0.5 btn rounded-md' data-add='${dateISO}'>+ Tema</button>
-            </div>
-            <div class='space-y-1'>${items||`<div class='text-xs opacity-50'>Sem itens</div>`}</div>
-        </div>`)
-        cell.querySelectorAll('[data-open]').forEach(b=> b.addEventListener('click',()=> openTheme(b.getAttribute('data-open'))))
-        cell.querySelector('[data-add]').addEventListener('click',()=> quickAddTheme(dateISO))
-        grid.append(cell)
-      }
+    function renderHomeJournal(){
+      const box = document.getElementById('homeJournal'); box.innerHTML=''
+      const s = Data.get();
+      const dates = weekRange(new Date())
+      dates.forEach(d=>{
+        const day = s.journal.daily.find(x=>x.date===d)
+        const mood = day?.mood ? `Humor ${day.mood}/10` : '—'
+        const foco = day?.focus ? `• ${day.focus}` : ''
+        const card = document.createElement('div'); card.className='flex items-center justify-between rounded-xl p-3 bg-[#101010] border border-white/5 mb-2'
+        card.innerHTML = `<div class='text-xs opacity-70'>${new Date(d).toLocaleDateString('pt-BR',{weekday:'short', day:'2-digit'})}</div><div class='text-sm'>${mood} <span class='opacity-70'>${foco}</span></div><button class='btn text-[11px] px-2 py-0.5 rounded-md' data-add='${d}'>+ Daily</button>`
+        card.querySelector('[data-add]').addEventListener('click',()=> openDailyPrompt(d))
+        box.appendChild(card)
+      })
     }
 
-    // ---------------- Utilities ----------------
-    function download(filename, text){
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(new Blob([text], {type:'text/plain'}));
-      a.download = filename; a.click(); URL.revokeObjectURL(a.href)
+    // ====== JOURNAL PAGE ======
+    function renderJournal(params={}){
+      const app = document.getElementById('app');
+      app.innerHTML = document.getElementById('journalTpl').innerHTML
+      const tab = params.tab || 'habits'
+      showJournalTab(tab)
+      app.querySelectorAll('.tab').forEach(a=> a.addEventListener('click',()=> showJournalTab(a.dataset.tab)))
     }
 
-    function quickAddTheme(dateISO){
-      const s = Data.state();
-      const id = 't_'+Date.now()
-      s.themes.push({ id, titulo:'Novo tema', persona:'Mulheres 30+', objetivo:'Avaliação Bella Prime', tags:[], plataformas:['Instagram'],
-        roteiros:{ youtube:'', reels:'', carrossel:'', estatico:'' }, datas:{ ideacao: toISO(today), publicacao: dateISO }, status:'Rascunho', checklist:{}, arquivado:false })
-      Data.save(); renderThemes(); renderDashboard(); openTheme(id)
+    function showJournalTab(tab){
+      const box = document.getElementById('journalView'); box.innerHTML=''
+      if(tab==='habits') return renderHabitsTab(box)
+      if(tab==='daily') return renderDailyTab(box)
+      if(tab==='monthly') return renderMonthlyTab(box)
+      if(tab==='quarter') return renderQuarterTab(box)
     }
 
-    // ---------------- Events & Init ----------------
-    document.getElementById('btnNewTheme').addEventListener('click',()=> openTheme(null))
-    document.getElementById('btnSaveTheme').addEventListener('click', saveTheme)
-    document.getElementById('btnExportMD').addEventListener('click', exportCurrentMD)
+    function renderHabitsTab(box){
+      const s = Data.get(); const wk = weekKey()
+      const dates = weekRange(new Date())
+      const head = document.createElement('div'); head.className='flex items-center justify-between mb-3'
+      head.innerHTML = `<h2 class='title text-lg'>Hábitos</h2><button class='btn px-3 py-2 rounded-md text-sm' id='btnAddHabit'>+ Hábito</button>`
+      box.appendChild(head)
+      const table = document.createElement('div'); table.className='glass rounded-2xl p-4'
+      s.habits.forEach((h,hi)=>{
+        h.checks = h.checks || {}; h.checks[wk] = h.checks[wk] || Array(7).fill(false)
+        const row = document.createElement('div'); row.className='flex items-center justify-between py-3 border-b border-white/5'
+        row.innerHTML = `<div class='text-sm'>${h.name}</div>`
+        const dots = document.createElement('div'); dots.className='flex items-center gap-2'
+        h.checks[wk].forEach((v,i)=>{
+          const b = document.createElement('button'); b.className = 'ring-dot'+(v?' done':''); b.title = dates[i]
+          b.addEventListener('click',()=>{ h.checks[wk][i]=!h.checks[wk][i]; Data.save(); showJournalTab('habits') })
+          dots.appendChild(b)
+        })
+        const pct = Math.round(100 * h.checks[wk].filter(Boolean).length / 7)
+        const pctEl = document.createElement('div'); pctEl.className='text-xs opacity-70 w-10 text-right'; pctEl.textContent = pct+'%'
+        const right = document.createElement('div'); right.className='flex items-center gap-3'; right.appendChild(dots); right.appendChild(pctEl)
+        row.appendChild(right); table.appendChild(row)
+      })
+      box.appendChild(table)
+      document.getElementById('btnAddHabit').addEventListener('click',()=>{
+        const name = prompt('Nome do hábito:')
+        if(!name) return
+        s.habits.push({ id:'h_'+Date.now(), name })
+        Data.save(); showJournalTab('habits')
+      })
+    }
 
-    document.getElementById('btnDailyLog').addEventListener('click', openDaily)
-    document.getElementById('btnNewDaily').addEventListener('click', openDaily)
-    document.getElementById('btnSaveDaily').addEventListener('click', saveDaily)
+    function renderDailyTab(box){
+      const s = Data.get();
+      const ctrl = document.createElement('div'); ctrl.className='flex items-center gap-2 mb-3'
+      ctrl.innerHTML = `<input type='date' id='dlDate' class='text-sm' value='${toISO(new Date())}'/><button class='btn px-3 py-2 rounded-md text-sm' id='btnAddDaily'>Salvar Daily</button>`
+      box.appendChild(ctrl)
+      const form = document.createElement('div'); form.className='grid md:grid-cols-2 gap-3'
+      form.innerHTML = `
+        <input id='dlFocus' placeholder='Foco do dia (1 frase)'/>
+        <input id='dlMITs' placeholder='3 MITs (separe por ;)'/>
+        <textarea id='dlNotes' placeholder='Notas / Reflexão PM' class='md:col-span-2 min-h-[120px]'></textarea><input id='dlMood' type='number' min='1' max='10' placeholder='Humor (1-10)'/>
+  `
+  box.appendChild(form)
+  document.getElementById('btnAddDaily').addEventListener('click',()=>{
+    const d = document.getElementById('dlDate').value || toISO(new Date())
+    const item = { date:d, focus: dlFocus.value, mits: dlMITs.value, notes: dlNotes.value, mood: Number(dlMood.value||0) }
+    const ix = s.journal.daily.findIndex(x=>x.date===d)
+    if(ix>=0) s.journal.daily[ix]=item; else s.journal.daily.push(item)
+    Data.save(); alert('Daily salvo!');
+  })
+  // Últimos 7
+  const list = document.createElement('div'); list.className='mt-4 grid gap-2'
+  s.journal.daily.slice(-7).reverse().forEach(d=>{
+    const card = document.createElement('div'); card.className='rounded-xl p-3 bg-[#101010] border border-white/5'
+    card.innerHTML = `<div class='text-sm title'>${new Date(d.date).toLocaleDateString('pt-BR')}</div><div class='text-xs opacity-70'>Humor: ${d.mood||'—'} • Foco: ${d.focus||'—'}</div>`
+    list.appendChild(card)
+  })
+  box.appendChild(list)
+}
 
-    document.getElementById('btnAddHabit').addEventListener('click', ()=>{
-      const nome = prompt('Nome do hábito (ex: Planejar dia anterior)')
-      if(!nome) return
-      const s = Data.state(); s.habitos.push({ id:'h_'+Date.now(), nome, frequencia:'DIARIO', check:{} }); Data.save(); renderHabits()
+function renderMonthlyTab(box){
+  const s = Data.get();
+  const wrap = document.createElement('div'); wrap.className='glass rounded-2xl p-4'
+  const moods = s.journal.daily.map(d=>d.mood).filter(Boolean)
+  const avg = moods.length? (moods.reduce((a,b)=>a+b,0)/moods.length).toFixed(1) : '—'
+  wrap.innerHTML = `<h2 class='title text-lg mb-2'>Monthly Log</h2><div class='text-sm opacity-80'>Humor médio do mês: <b>${avg}</b></div><div class='divider my-3'></div><textarea id='monthlyNotes' placeholder='Vitórias, travas, aprendizados...' class='w-full min-h-[140px]'></textarea>`
+  box.appendChild(wrap)
+}
+
+function renderQuarterTab(box){
+  const wrap = document.createElement('div'); wrap.className='glass rounded-2xl p-4'
+  wrap.innerHTML = `<h2 class='title text-lg mb-2'>Trimestral Log</h2><div class='grid md:grid-cols-3 gap-3'><textarea placeholder='Metas do ciclo'></textarea><textarea placeholder='Hábitos a reforçar'></textarea><textarea placeholder='Hábitos a substituir'></textarea></div>`
+  box.appendChild(wrap)
+}
+
+function openDailyPrompt(dateISO){
+  const s = Data.get();
+  const focus = prompt(`Daily ${new Date(dateISO).toLocaleDateString('pt-BR')} — foco do dia:`) || ''
+  const mood = Number(prompt('Humor (1-10):')||0)
+  const item = { date:dateISO, focus, mood, mits:'', notes:'' }
+  const ix = s.journal.daily.findIndex(x=>x.date===dateISO)
+  if(ix>=0) s.journal.daily[ix]=item; else s.journal.daily.push(item)
+  Data.save(); router()
+}
+
+// ====== THEMES PAGE ======
+let editingId = null
+function renderThemes(){
+  const app = document.getElementById('app');
+  app.innerHTML = document.getElementById('themesTpl').innerHTML
+  drawIdeas(); drawDrafts(); drawWeekPub();
+  document.getElementById('btnAddIdea').addEventListener('click',()=>{
+    const title = prompt('Título da ideia:'); if(!title) return
+    Data.get().themes.push({ id:'t_'+Date.now(), title, status:'Ideia', persona:'', objetivo:'', platforms:[], dates:{ gravacao:'', publicacao:'' }, scripts:{ yt:'', reels:'' } })
+    Data.save(); drawIdeas();
+  })
+  document.getElementById('btnNewTheme').addEventListener('click',()=> openThemeModal({}))
+}
+
+function drawIdeas(){
+  const box = document.getElementById('ideasList'); box.innerHTML=''
+  Data.get().themes.filter(t=>t.status==='Ideia').forEach(t=>{
+    const row = document.createElement('div'); row.className='flex items-center justify-between px-3 py-2 rounded-lg bg-[#101010] border border-white/5'
+    row.innerHTML = `<div class='text-sm'>${t.title}</div><div class='flex items-center gap-2'><button class='btn px-2 py-1 rounded-md text-xs' data-edit='${t.id}'>Rascunhar</button><button class='btn px-2 py-1 rounded-md text-xs' data-del='${t.id}'>Excluir</button></div>`
+    row.querySelector('[data-edit]').addEventListener('click',()=>{ t.status='Rascunho'; Data.save(); drawIdeas(); drawDrafts() })
+    row.querySelector('[data-del]').addEventListener('click',()=>{ const s=Data.get(); s.themes=s.themes.filter(x=>x.id!==t.id); Data.save(); drawIdeas() })
+    box.appendChild(row)
+  })
+}
+
+function drawDrafts(){
+  const box = document.getElementById('draftsList'); box.innerHTML=''
+  Data.get().themes.filter(t=>t.status!=='Ideia').forEach(t=>{
+    const row = document.createElement('div'); row.className='px-3 py-2 rounded-lg bg-[#101010] border border-white/5'
+    row.innerHTML = `<div class='flex items-center justify-between'><div><div class='title text-sm'>${t.title}</div><div class='text-xs opacity-70 mt-0.5'>${(t.platforms||[]).join(' • ')||'—'} • Pub.: ${t.dates?.publicacao||'—'}</div></div><div class='flex gap-2'><button class='btn px-2 py-1 rounded-md text-xs' data-open='${t.id}'>Abrir</button><button class='btn px-2 py-1 rounded-md text-xs' data-del='${t.id}'>Excluir</button></div></div>`
+    row.querySelector('[data-open]').addEventListener('click',()=> openThemeModal(t))
+    row.querySelector('[data-del]').addEventListener('click',()=>{ const s=Data.get(); s.themes=s.themes.filter(x=>x.id!==t.id); Data.save(); drawDrafts(); drawWeekPub() })
+    box.appendChild(row)
+  })
+}
+
+function drawWeekPub(){
+  const box = document.getElementById('weekPub'); box.innerHTML=''
+  const dates = weekRange(new Date())
+  dates.forEach(d=>{
+    const items = Data.get().themes.filter(t=> t.dates?.publicacao === d)
+    const day = document.createElement('div'); day.className='rounded-xl p-3 bg-[#101010] border border-white/5'
+    day.innerHTML = `<div class='flex items-center justify-between mb-2'><span class='text-xs opacity-70'>${new Date(d).toLocaleDateString('pt-BR',{weekday:'short', day:'2-digit'})}</span><button class='btn text-[11px] px-2 py-0.5 rounded-md' data-add='${d}'>+ Tema</button></div>`
+    const list = document.createElement('div');
+    if(!items.length){ list.innerHTML = `<div class='text-xs opacity-50'>Sem itens</div>` }
+    items.forEach(t=>{
+      const it = document.createElement('div'); it.className='text-xs px-2 py-1 rounded bg-black/40 border border-white/10 mb-1'
+      it.textContent = `${t.title} — ${(t.platforms||[]).join(' • ')}`
+      list.appendChild(it)
     })
+    day.appendChild(list)
+    day.querySelector('[data-add]').addEventListener('click',()=> openThemeModal({dates:{publicacao:d}}))
+    box.appendChild(day)
+  })
+}
 
-    document.getElementById('btnNewIdea').addEventListener('click', ()=>{
-      const titulo = prompt('Título/ideia rápida')
-      if(!titulo) return
-      const s = Data.state(); const id='t_'+Date.now()
-      s.themes.push({ id, titulo, persona:'Mulheres 30+', objetivo:'Avaliação Bella Prime', tags:['ideia'], plataformas:[], roteiros:{}, datas:{ ideacao: toISO(today) }, status:'Rascunho', checklist:{}, arquivado:false })
-      Data.save(); renderThemes(); renderDashboard();
-    })
+function openThemeModal(data){
+  const s = Data.get();
+  const modal = document.querySelector('#modalTheme');
+  modal.showModal();
+  editingId = data.id || null
+  fTitulo.value = data.title||''; fPersona.value=data.persona||''; fObjetivo.value=data.objetivo||'';
+  dGravacao.value = data.dates?.gravacao||''; dPublicacao.value = data.dates?.publicacao||'';
+  pYT.checked = !!data.platforms?.includes('YouTube'); pIG.checked=!!data.platforms?.includes('Instagram'); pBlog.checked=!!data.platforms?.includes('Blog');
+  fStatus.value = data.status||'Rascunho'; rYT.value=data.scripts?.yt||''; rReels.value=data.scripts?.reels||'';
+  themeIdInfo.textContent = editingId || 'novo'
+  document.getElementById('btnSaveTheme').onclick = ()=>{
+    const obj = {
+      id: editingId || ('t_'+Date.now()),
+      title: fTitulo.value.trim(), persona:fPersona.value.trim(), objetivo:fObjetivo.value.trim(),
+      platforms: [pYT.checked&&'YouTube', pIG.checked&&'Instagram', pBlog.checked&&'Blog'].filter(Boolean),
+      status: fStatus.value,
+      dates: { gravacao:dGravacao.value, publicacao:dPublicacao.value },
+      scripts: { yt:rYT.value, reels:rReels.value }
+    }
+    const ix = s.themes.findIndex(x=>x.id===obj.id)
+    if(ix>=0) s.themes[ix]=obj; else s.themes.push(obj)
+    Data.save(); modal.close(); drawDrafts(); drawWeekPub(); router()
+  }
+}
 
-    document.getElementById('btnWeeklyReview').addEventListener('click', ()=>{
-      const s=Data.state();
-      const now = new Date();
-      const year = now.getFullYear();
-      const week = Math.ceil((((now - new Date(year,0,1)) / 86400000) + new Date(year,0,1).getDay()+1)/7)
-      s.journal.weekly.push({ id:`w_${year}-W${week}`, wins:[], obstaculos:[], metricas:{posts:0,reels:0,leads:0}, ajustes:[], prioridades:[] })
-      Data.save(); alert('Rascunho de Revisão Semanal criado. (ver seção BJ)')
-    })
+// ====== BOOT ======
+Data.load();
+router();
 
-    document.getElementById('filterStatus').addEventListener('change', renderThemes)
-    document.getElementById('searchThemes').addEventListener('input', renderThemes)
-
-    document.getElementById('btnExportJSON').addEventListener('click', ()=>{
-      download(`flowon-backup-${toISO(today)}.json`, JSON.stringify(Data.state(), null, 2))
-    })
-    document.getElementById('importJSON').addEventListener('change', async (e)=>{
-      const file = e.target.files[0]; if(!file) return
-      const txt = await file.text();
-      try{ Data._state = JSON.parse(txt); Data.save(); renderDashboard(); renderHabits(); renderThemes(); renderJournal(); buildAgenda(); alert('Importado com sucesso!') }
-      catch(err){ alert('Arquivo inválido.'); console.error(err) }
-      e.target.value = ''
-    })
-
-    document.getElementById('agendaMonth').addEventListener('change', buildAgenda)
-
-    // ---- Boot ----
-    Data.load();
-    document.getElementById('agendaMonth').value = toISO(today).slice(0,7)
-    renderDashboard();
-    renderHabits();
-    renderThemes();
-    renderJournal();
-    buildAgenda();
-  </script></body>
-                              </html>
+  </script>
+</body>
+  </html>
+  
