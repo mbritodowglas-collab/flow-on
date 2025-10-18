@@ -44,3 +44,29 @@
 ---
 
 ## 🧱 Estrutura
+
+---
+
+## 💬 Filosofia do Projeto
+
+O **Flow On** nasceu da ideia de unir neurociência, planejamento e criação digital.  
+O objetivo é simplificar a rotina criativa, transformar o excesso de ideias em execução estruturada e cultivar **consistência real**, sem depender de sistemas externos ou assinaturas.
+
+---
+
+## 🪶 Autor
+
+**Márcio Dowglas — Personal Trainer & NeuroCoach**  
+🔗 [Instagram](https://www.instagram.com/marciodowglasfitness)  
+🌐 [Site / Blog](https://mbritodowglas.github.io/mdpersonal/)
+
+---
+
+## 📄 Licença
+
+Este projeto é distribuído sob a licença **MIT** — uso livre para fins pessoais e educacionais.  
+Sinta-se à vontade para adaptar o código para suas próprias rotinas criativas.
+
+---
+
+### 🌟 “Planeje. Execute. Evolua.”
