@@ -1,108 +1,55 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="utf-8" />
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Flow On — v1 • SPA</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700&family=Open+Sans:wght@300;400;600&display=swap" rel="stylesheet">
-  <style>
-    :root{ --bg:#0b0b0b; --card:#121212; --muted:#1a1a1a; --text:#f5f5f5; }
-    html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Open Sans',system-ui,Roboto}
-    .title{font-family:'Montserrat',sans-serif}
-    .glass{background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02));backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.06)}
-    .btn{background:var(--muted);border:1px solid rgba(255,255,255,.08)}
-    .btn:hover{border-color:rgba(255,255,255,.18)}
-    .badge{background:#141414;border:1px solid rgba(255,255,255,.06)}
-    input,select,textarea{background:#121212;border:1px solid rgba(255,255,255,.08);border-radius:.6rem;padding:.6rem .8rem}
-    .ring-dot{width:22px;height:22px;border-radius:9999px;border:2px solid rgba(255,255,255,.15);display:grid;place-items:center;}
-    .ring-dot.done{border-color:#22c55e;box-shadow:0 0 0 2px rgba(34,197,94,.25)}
-    a[data-link].active{outline:2px solid rgba(255,255,255,.18); background:#1f1f1f}
-  </style>
+  <title>Flow On — Sua Rotina em Movimento</title>
+  <link rel="stylesheet" href="assets/css/style.css" />
+  <link rel="icon" href="assets/img/favicon-32.png" />
 </head>
 <body>
-  <header class="sticky top-0 z-40 bg-black/60 backdrop-blur border-b border-white/10">
-    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3">
-      <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-red-600 to-amber-400 grid place-items-center text-black font-bold">ON</div>
-      <h1 class="title text-lg">Flow On <span class="text-white/50">— v1</span></h1>
-      <nav class="ml-auto flex gap-2">
-        <a href="#/" data-link class="btn px-3 py-2 rounded-md text-sm">🏠 Home</a>
-        <a href="#/journal" data-link class="btn px-3 py-2 rounded-md text-sm">📓 Journal</a>
-        <a href="#/themes" data-link class="btn px-3 py-2 rounded-md text-sm">🎬 Temas</a>
+  <header class="navbar">
+    <div class="nav-inner">
+      <div class="logo">
+        <img src="assets/img/logo.svg" alt="Flow On logo" />
+        <span>Flow On</span>
+      </div>
+      <nav class="menu">
+        <a href="./index.html" class="active">🏠 Home</a>
+        <a href="pages/journal/">📓 Journal</a>
+        <a href="pages/themes/">🎬 Temas</a>
+        <a href="pages/settings/">⚙️ Configurações</a>
       </nav>
     </div>
   </header>
 
-  <main id="app" class="max-w-7xl mx-auto px-4 py-6"></main>
-
-  <template id="homeTpl">
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <section class="glass rounded-2xl p-5">
-        <div class="flex items-center justify-between mb-3">
-          <h2 class="title text-lg">Hábitos (semana)</h2>
-          <a href="#/journal?tab=habits" class="text-xs underline">ver hábitos</a>
-        </div>
-        <div id="homeHabits"></div>
-        <div class="text-[11px] opacity-60 mt-2">* visão geral — edite em Journal → Hábitos</div>
-      </section>
-      <section class="glass rounded-2xl p-5">
-        <div class="flex items-center justify-between mb-3">
-          <h2 class="title text-lg">Agenda de Conteúdo</h2>
-          <a href="#/themes" class="text-xs underline">abrir temas</a>
-        </div>
-        <div id="homeContent"></div>
-      </section>
-      <section class="glass rounded-2xl p-5">
-        <div class="flex items-center justify-between mb-3">
-          <h2 class="title text-lg">Agenda do Journal</h2>
-          <a href="#/journal" class="text-xs underline">abrir journal</a>
-        </div>
-        <div id="homeJournal"></div>
-      </section>
-    </div>
-  </template>
-
-  <template id="journalTpl">
-    <div class="glass rounded-2xl p-3 mb-4">
-      <div class="flex flex-wrap gap-2">
-        <a data-tab="habits" class="tab btn px-3 py-2 rounded-md text-sm">Hábitos</a>
-        <a data-tab="daily" class="tab btn px-3 py-2 rounded-md text-sm">Daily Log</a>
-        <a data-tab="monthly" class="tab btn px-3 py-2 rounded-md text-sm">Monthly Log</a>
-        <a data-tab="quarter" class="tab btn px-3 py-2 rounded-md text-sm">Trimestral Log</a>
+  <main class="container">
+    <section class="card">
+      <h2>Hábitos da Semana</h2>
+      <div id="habits-summary">
+        <p>Carregando hábitos...</p>
       </div>
-    </div>
-    <section><div id="journalView"></div></section>
-  </template>
+    </section>
 
-  <template id="themesTpl">
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <section class="glass rounded-2xl p-5">
-        <div class="flex items-center justify-between mb-3">
-          <h2 class="title text-lg">Banco de Ideias</h2>
-          <button id="btnAddIdea" class="btn px-3 py-2 rounded-md text-sm">+ Ideia</button>
-        </div>
-        <div id="ideasList" class="space-y-2"></div>
-      </section>
-      <section class="glass rounded-2xl p-5">
-        <div class="flex items-center justify-between mb-3">
-          <h2 class="title text-lg">Rascunhos</h2>
-        </div>
-        <div id="draftsList" class="space-y-2"></div>
-      </section>
-      <section class="glass rounded-2xl p-5">
-        <div class="flex items-center justify-between mb-3">
-          <h2 class="title text-lg">Publicação (semana)</h2>
-          <button id="btnNewTheme" class="btn px-3 py-2 rounded-md text-sm">+ Novo Tema</button>
-        </div>
-        <div id="weekPub" class="space-y-2"></div>
-      </section>
-    </div>
-  </template>
+    <section class="card">
+      <h2>Agenda de Conteúdo</h2>
+      <div id="content-summary">
+        <p>Carregando publicações...</p>
+      </div>
+    </section>
 
-  <script>
-    // ... (mesmo JS do arquivo original corrigido e funcional)
-  </script>
+    <section class="card">
+      <h2>Resumo do Journal</h2>
+      <div id="journal-summary">
+        <p>Carregando registros...</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>Flow On © 2025 — Planeje. Execute. Evolua.</p>
+  </footer>
+
+  <script src="assets/js/app.js"></script>
 </body>
 </html>
