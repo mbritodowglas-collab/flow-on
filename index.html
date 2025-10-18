@@ -314,16 +314,25 @@
       form.innerHTML = `
         <input id='dlFocus' placeholder='Foco do dia (1 frase)'/>
         <input id='dlMITs' placeholder='3 MITs (separe por ;)'/>
+        <input id='dlGratidao' placeholder='Gratidão (3 itens; separados por ;)'/>
         <textarea id='dlNotes' placeholder='Notas / Reflexão PM' class='md:col-span-2 min-h-[120px]'></textarea><input id='dlMood' type='number' min='1' max='10' placeholder='Humor (1-10)'/>
   `
   box.appendChild(form)
   document.getElementById('btnAddDaily').addEventListener('click',()=>{
     const d = document.getElementById('dlDate').value || toISO(new Date())
-    const item = { date:d, focus: dlFocus.value, mits: dlMITs.value, notes: dlNotes.value, mood: Number(dlMood.value||0) }
+    const item = { date:d, focus: dlFocus.value, mits: dlMITs.value, gratidao: dlGratidao.value, notes: dlNotes.value, mood: Number(dlMood.value||0) }
     const ix = s.journal.daily.findIndex(x=>x.date===d)
     if(ix>=0) s.journal.daily[ix]=item; else s.journal.daily.push(item)
     Data.save(); alert('Daily salvo!');
   })
+  const list = document.createElement('div'); list.className='mt-4 grid gap-2'
+  s.journal.daily.slice(-7).reverse().forEach(d=>{
+    const card = document.createElement('div'); card.className='rounded-xl p-3 bg-[#101010] border border-white/5'
+    card.innerHTML = `<div class='text-sm title'>${new Date(d.date).toLocaleDateString('pt-BR')}</div><div class='text-xs opacity-70'>Humor: ${d.mood||'—'} • Foco: ${d.focus||'—'}</div><div class='text-[11px] opacity-60 mt-1'>Gratidão: ${(d.gratidao||'—')}</div>`
+    list.appendChild(card)
+  })
+  box.appendChild(list)
+})
   // Últimos 7
   const list = document.createElement('div'); list.className='mt-4 grid gap-2'
   s.journal.daily.slice(-7).reverse().forEach(d=>{
@@ -337,11 +346,14 @@
 function renderMonthlyTab(box){
   const s = Data.get();
   const wrap = document.createElement('div'); wrap.className='glass rounded-2xl p-4'
-  const moods = s.journal.daily.map(d=>d.mood).filter(Boolean)
+  const thisMonth = new Date().toISOString().slice(0,7)
+  const monthDailies = s.journal.daily.filter(d=> (d.date||'').startsWith(thisMonth))
+  const moods = monthDailies.map(d=>d.mood).filter(Boolean)
   const avg = moods.length? (moods.reduce((a,b)=>a+b,0)/moods.length).toFixed(1) : '—'
-  wrap.innerHTML = `<h2 class='title text-lg mb-2'>Monthly Log</h2><div class='text-sm opacity-80'>Humor médio do mês: <b>${avg}</b></div><div class='divider my-3'></div><textarea id='monthlyNotes' placeholder='Vitórias, travas, aprendizados...' class='w-full min-h-[140px]'></textarea>`
-  box.appendChild(wrap)
-}
+  const counts = {}
+  monthDailies.forEach(d=>{ (d.gratidao||'').split(/;|,|
+
+/).map(x=>x.trim()).filter(Boolean).forEach(g=>{ counts[g]=(counts[g]||0)+1 }) }) const top = Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,5) const topList = top.length? top.map(([k,v])=><li class='text-sm'>${k} <span class='opacity-60'>(x${v})</span></li>).join('') : <li class='text-sm opacity-60'>Sem registros de gratidão ainda.</li> wrap.innerHTML = <h2 class='title text-lg mb-2'>Monthly Log</h2> <div class='text-sm opacity-80 mb-2'>Humor médio do mês: <b>${avg}</b></div> <div class='mb-3'> <div class='title text-sm mb-1'>Marcos de Gratidão (Top 5)</div> <ul class='list-disc pl-5 space-y-1'>${topList}</ul> </div> <div class='divider my-3'></div> <textarea id='monthlyNotes' placeholder='Vitórias, travas, aprendizados...' class='w-full min-h-[140px]'></textarea> box.appendChild(wrap) }
 
 function renderQuarterTab(box){
   const wrap = document.createElement('div'); wrap.className='glass rounded-2xl p-4'
@@ -366,8 +378,10 @@ function renderThemes(){
   app.innerHTML = document.getElementById('themesTpl').innerHTML
   drawIdeas(); drawDrafts(); drawWeekPub();
   document.getElementById('btnAddIdea').addEventListener('click',()=>{
-    const title = prompt('Título da ideia:'); if(!title) return
-    Data.get().themes.push({ id:'t_'+Date.now(), title, status:'Ideia', persona:'', objetivo:'', platforms:[], dates:{ gravacao:'', publicacao:'' }, scripts:{ yt:'', reels:'' } })
+  const title = prompt('Título da ideia:'); if(!title) return
+  Data.get().themes.push({ id:'t_'+Date.now(), title, status:'Ideia', persona:'', objetivo:'', platforms:[], dates:{ gravacao:'', publicacao:'' }, scripts:{ yt:'', reels:'' }, archived:false })
+  Data.save(); drawIdeas();
+})
     Data.save(); drawIdeas();
   })
   document.getElementById('btnNewTheme').addEventListener('click',()=> openThemeModal({}))
@@ -423,17 +437,27 @@ function openThemeModal(data){
   fTitulo.value = data.title||''; fPersona.value=data.persona||''; fObjetivo.value=data.objetivo||'';
   dGravacao.value = data.dates?.gravacao||''; dPublicacao.value = data.dates?.publicacao||'';
   pYT.checked = !!data.platforms?.includes('YouTube'); pIG.checked=!!data.platforms?.includes('Instagram'); pBlog.checked=!!data.platforms?.includes('Blog');
-  fStatus.value = data.status||'Rascunho'; rYT.value=data.scripts?.yt||''; rReels.value=data.scripts?.reels||'';
+  fStatus.value = data.status||'Ideia'; rYT.value=data.scripts?.yt||''; rReels.value=data.scripts?.reels||'';
   themeIdInfo.textContent = editingId || 'novo'
   document.getElementById('btnSaveTheme').onclick = ()=>{
+    let status = fStatus.value
+    const hasPub = !!dPublicacao.value
+    if(status==='Ideia') status = 'Rascunho'
+    if(hasPub) status = 'Agendado'
     const obj = {
       id: editingId || ('t_'+Date.now()),
       title: fTitulo.value.trim(), persona:fPersona.value.trim(), objetivo:fObjetivo.value.trim(),
       platforms: [pYT.checked&&'YouTube', pIG.checked&&'Instagram', pBlog.checked&&'Blog'].filter(Boolean),
-      status: fStatus.value,
+      status,
       dates: { gravacao:dGravacao.value, publicacao:dPublicacao.value },
-      scripts: { yt:rYT.value, reels:rReels.value }
+      scripts: { yt:rYT.value, reels:rReels.value },
+      archived: data.archived||false
     }
+    const ix = s.themes.findIndex(x=>x.id===obj.id)
+    if(ix>=0) s.themes[ix]=obj; else s.themes.push(obj)
+    Data.save(); modal.close(); drawIdeas(); drawDrafts(); drawWeekPub(); router()
+  }
+}
     const ix = s.themes.findIndex(x=>x.id===obj.id)
     if(ix>=0) s.themes[ix]=obj; else s.themes.push(obj)
     Data.save(); modal.close(); drawDrafts(); drawWeekPub(); router()
@@ -446,5 +470,4 @@ router();
 
   </script>
 </body>
-  </html>
-  
+</html>
