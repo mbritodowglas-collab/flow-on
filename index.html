@@ -1,0 +1,524 @@
+<!DOCTYPE html><html lang="pt-br">\>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Flow On — v0 • Planner de Conteúdo + Bullet Journal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Open+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#0b0b0b; --card:#121212; --muted:#1c1c1c; --brand:#e32526; --gold:#e0a96d; --text:#f5f5f5;
+    }
+    html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Open Sans',system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue','Noto Sans',Ubuntu,'Apple Color Emoji','Segoe UI Emoji','Segoe UI Symbol';}
+    .title{font-family:'Montserrat',sans-serif}
+    .glass{background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02));backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.06)}
+    .brand{color:var(--gold)}
+    .btn{background:var(--muted);border:1px solid rgba(255,255,255,.08)}
+    .btn:hover{border-color:rgba(255,255,255,.18)}
+    .badge{background:#141414; border:1px solid rgba(255,255,255,.06);}
+    .status{border-left-width:6px}
+    .ring-brand{box-shadow:0 0 0 2px rgba(224,169,109,.35)}
+    input,select,textarea{background:#121212;border:1px solid rgba(255,255,255,.08);border-radius:.6rem;padding:.6rem .8rem}
+    textarea{min-height:120px}
+    .divider{border-top:1px dashed rgba(255,255,255,.08)}
+  </style>
+</head>
+<body>
+  <!-- Topbar -->
+  <header class="sticky top-0 z-50 bg-black/60 backdrop-blur border-b border-white/10">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3">
+      <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-red-600 to-amber-400 grid place-items-center text-black font-bold">ON</div>
+      <h1 class="title text-lg sm:text-xl">Flow On <span class="text-white/60">— v0</span></h1>
+      <div class="ml-auto flex gap-2">
+        <button id="btnNewTheme" class="btn px-3 py-2 rounded-lg text-sm">+ Novo Tema</button>
+        <button id="btnDailyLog" class="btn px-3 py-2 rounded-lg text-sm">+ Daily Log</button>
+        <button id="btnExportJSON" class="btn px-3 py-2 rounded-lg text-sm">Exportar .json</button>
+        <label class="btn px-3 py-2 rounded-lg text-sm cursor-pointer">Importar .json
+          <input id="importJSON" type="file" accept="application/json" class="hidden" />
+        </label>
+      </div>
+    </div>
+  </header>  <!-- Main -->  <main class="max-w-7xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- LEFT: Dashboard / Ciclo 90 dias -->
+    <section class="glass rounded-2xl p-5 lg:col-span-2">
+      <div class="flex items-center gap-3 mb-4">
+        <h2 class="title text-xl">Painel do Ciclo (90 dias)</h2>
+        <span id="cycleLabel" class="text-xs px-2 py-1 rounded badge">—</span>
+        <div class="ml-auto flex items-center gap-2 text-sm">
+          <span class="opacity-70">Faltam</span>
+          <span id="daysLeft" class="px-2 py-1 rounded bg-black/50">—</span>
+          <span class="opacity-70">dias</span>
+        </div>
+      </div>
+      <!-- KPIs -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+        <div class="rounded-xl p-4 bg-[#101010] border border-white/5">
+          <div class="text-xs opacity-70">Peças publicadas</div>
+          <div id="kpiPosts" class="title text-2xl">0</div>
+        </div>
+        <div class="rounded-xl p-4 bg-[#101010] border border-white/5">
+          <div class="text-xs opacity-70">Constância (%)</div>
+          <div id="kpiConsistency" class="title text-2xl">0%</div>
+        </div>
+        <div class="rounded-xl p-4 bg-[#101010] border border-white/5">
+          <div class="text-xs opacity-70">Hábito sólido</div>
+          <div id="kpiHabit" class="title text-2xl">—</div>
+        </div>
+        <div class="rounded-xl p-4 bg-[#101010] border border-white/5">
+          <div class="text-xs opacity-70">Humor médio</div>
+          <div id="kpiMood" class="title text-2xl">—</div>
+        </div>
+      </div>
+      <!-- Road / Bars -->
+      <div class="space-y-3">
+        <div class="flex items-center justify-between text-sm"><span>Meta YT (vídeos)</span><span id="barYTLabel">0 / 0</span></div>
+        <div class="w-full h-2 bg-white/10 rounded-full"><div id="barYT" class="h-2 bg-gradient-to-r from-red-600 to-amber-400 rounded-full" style="width:0%"></div></div>
+        <div class="flex items-center justify-between text-sm mt-3"><span>Posts IG</span><span id="barIGLabel">0 / 0</span></div>
+        <div class="w-full h-2 bg-white/10 rounded-full"><div id="barIG" class="h-2 bg-gradient-to-r from-red-600 to-amber-400 rounded-full" style="width:0%"></div></div>
+      </div>
+    </section><!-- RIGHT: Hoje / Hábitos -->
+<aside class="glass rounded-2xl p-5 space-y-5">
+  <h3 class="title text-lg">Hoje</h3>
+  <div class="text-sm opacity-80" id="todayDate">—</div>
+  <div class="divider my-3"></div>
+  <div>
+    <div class="title text-sm mb-2">Hábitos (semana)</div>
+    <div id="habitList" class="space-y-2"></div>
+    <button id="btnAddHabit" class="mt-3 btn px-3 py-2 rounded-lg text-sm">+ Hábito</button>
+  </div>
+  <div class="divider my-4"></div>
+  <div>
+    <div class="title text-sm mb-2">Atalhos</div>
+    <div class="flex flex-wrap gap-2">
+      <button id="btnNewIdea" class="btn px-3 py-2 rounded-lg text-sm">+ Capturar ideia</button>
+      <button id="btnWeeklyReview" class="btn px-3 py-2 rounded-lg text-sm">Revisão semanal</button>
+    </div>
+  </div>
+</aside>
+
+<!-- THEMES -->
+<section class="glass rounded-2xl p-5 lg:col-span-2">
+  <div class="flex items-center gap-3 mb-4">
+    <h2 class="title text-xl">Temas & Roteiros</h2>
+    <div class="ml-auto flex items-center gap-2 text-sm">
+      <select id="filterStatus" class="text-sm">
+        <option value="">Todos</option>
+        <option>Rascunho</option>
+        <option>Em gravação</option>
+        <option>Em edição</option>
+        <option>Publicado</option>
+      </select>
+      <input id="searchThemes" placeholder="Buscar tema…" class="text-sm" />
+    </div>
+  </div>
+  <div id="themesList" class="grid gap-3"></div>
+</section>
+
+<!-- JOURNAL -->
+<section class="glass rounded-2xl p-5">
+  <div class="flex items-center gap-3 mb-3">
+    <h2 class="title text-xl">Bullet Journal</h2>
+    <button id="btnNewDaily" class="btn px-3 py-1.5 rounded-md text-sm ml-auto">+ Daily Log</button>
+  </div>
+  <div class="space-y-4" id="journalList"></div>
+</section>
+
+<!-- AGENDA -->
+<section class="glass rounded-2xl p-5 lg:col-span-3">
+  <div class="flex items-center gap-3 mb-4">
+    <h2 class="title text-xl">Agenda (ideação • gravação • edição • publicação)</h2>
+    <div class="ml-auto flex items-center gap-2 text-sm">
+      <input id="agendaMonth" type="month" class="text-sm" />
+    </div>
+  </div>
+  <div id="agendaGrid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2"></div>
+</section>
+
+  </main>  <!-- MODALS -->  <dialog id="modalTheme" class="rounded-2xl p-0 w-[min(900px,96vw)] bg-[#0f0f0f] text-white">
+    <form method="dialog">
+      <div class="p-4 border-b border-white/10 flex items-center">
+        <h3 class="title text-lg" id="modalThemeTitle">Novo tema</h3>
+        <button class="ml-auto px-3 py-1.5 btn rounded-md">Fechar</button>
+      </div>
+    </form>
+    <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[70vh] overflow-y-auto">
+      <div class="space-y-3">
+        <input id="fTitulo" placeholder="Título do tema" class="w-full"/>
+        <input id="fPersona" placeholder="Persona (ex: Mulheres 30+)" class="w-full"/>
+        <input id="fObjetivo" placeholder="Objetivo/CTA (ex: Avaliação Bella Prime)" class="w-full"/>
+        <input id="fTags" placeholder="Tags (separadas por vírgula)" class="w-full"/>
+        <label class="block text-sm opacity-80">Plataformas</label>
+        <div class="flex flex-wrap gap-2 text-sm">
+          <label class="inline-flex items-center gap-2"><input type="checkbox" value="YouTube" id="pYT">YouTube</label>
+          <label class="inline-flex items-center gap-2"><input type="checkbox" value="Instagram" id="pIG">Instagram</label>
+          <label class="inline-flex items-center gap-2"><input type="checkbox" value="Blog" id="pBlog">Blog</label>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm opacity-70">Ideação</label>
+            <input id="dIdeacao" type="date" class="w-full"/>
+          </div>
+          <div>
+            <label class="block text-sm opacity-70">Gravação</label>
+            <input id="dGravacao" type="date" class="w-full"/>
+          </div>
+          <div>
+            <label class="block text-sm opacity-70">Edição</label>
+            <input id="dEdicao" type="date" class="w-full"/>
+          </div>
+          <div>
+            <label class="block text-sm opacity-70">Publicação</label>
+            <input id="dPublicacao" type="date" class="w-full"/>
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm opacity-70">Status</label>
+          <select id="fStatus" class="w-full">
+            <option>Rascunho</option>
+            <option>Em gravação</option>
+            <option>Em edição</option>
+            <option>Publicado</option>
+          </select>
+        </div>
+      </div>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm title">Roteiro — YouTube</label>
+          <textarea id="rYT" placeholder="Título, thumb, intro 30s, tópicos, CTA" class="w-full"></textarea>
+        </div>
+        <div>
+          <label class="block text-sm title">Roteiro — Reels/Stories</label>
+          <textarea id="rReels" placeholder="Hook, micro-roteiro, CTA" class="w-full"></textarea>
+        </div>
+        <div>
+          <label class="block text-sm title">Roteiro — Carrossel</label>
+          <textarea id="rCarrossel" placeholder="Slides 1–10 + CTA" class="w-full"></textarea>
+        </div>
+        <div>
+          <label class="block text-sm title">Roteiro — Estático</label>
+          <textarea id="rEstatico" placeholder="Headline, copy, hashtags" class="w-full"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="p-4 border-t border-white/10 flex items-center gap-3">
+      <button id="btnSaveTheme" class="btn px-4 py-2 rounded-lg">Salvar</button>
+      <button id="btnExportMD" class="btn px-4 py-2 rounded-lg">Exportar .md</button>
+      <div class="ml-auto text-sm opacity-70" id="themeIdInfo"></div>
+    </div>
+  </dialog>  <dialog id="modalDaily" class="rounded-2xl p-0 w-[min(800px,96vw)] bg-[#0f0f0f] text-white">
+    <form method="dialog">
+      <div class="p-4 border-b border-white/10 flex items-center">
+        <h3 class="title text-lg">Daily Log</h3>
+        <button class="ml-auto px-3 py-1.5 btn rounded-md">Fechar</button>
+      </div>
+    </form>
+    <div class="p-4 space-y-3">
+      <div class="grid md:grid-cols-2 gap-3">
+        <input id="dlDate" type="date" class="w-full"/>
+        <input id="dlFoco" placeholder="Foco do dia (1 frase)" class="w-full"/>
+      </div>
+      <input id="dlMITs" placeholder="3 MITs (separe por ;)" class="w-full"/>
+      <textarea id="dlConteudo" placeholder="Conteúdo do dia (roteiro X, gravação Y)"></textarea>
+      <div class="grid md:grid-cols-3 gap-3">
+        <input id="dlTreino" placeholder="Treino"/>
+        <input id="dlNutricao" placeholder="Nutrição"/>
+        <input id="dlSono" placeholder="Sono (h)"/>
+      </div>
+      <input id="dlGratidao" placeholder="Gratidão (3 itens, ;)"/>
+      <textarea id="dlReflexao" placeholder="Reflexão PM (2–4 linhas)"></textarea>
+      <div class="grid md:grid-cols-2 gap-3">
+        <input id="dlHumor" type="number" min="1" max="10" placeholder="Humor (1-10)"/>
+        <button id="btnSaveDaily" class="btn px-4 py-2 rounded-lg">Salvar Daily</button>
+      </div>
+    </div>
+  </dialog>  <script>
+    // ---------------- Core Store ----------------
+    const STORE_KEY = 'flowon.data.v0';
+    const today = new Date();
+
+    const Data = {
+      _state: { themes: [], journal:{daily:[], weekly:[], monthly:[]}, habitos:[], metas:{yt:24, ig:60}, ciclo:{inicio:null,fim:null} },
+      load(){
+        try{ const raw = localStorage.getItem(STORE_KEY); if(raw){ this._state = JSON.parse(raw) }
+          // seed inicial
+          if(!this._state.ciclo.inicio){
+            const start = new Date(today.getFullYear(), Math.floor(today.getMonth()/3)*3, 1)
+            const end = new Date(start.getFullYear(), start.getMonth()+3, 0)
+            this._state.ciclo = {inicio:start.toISOString().slice(0,10), fim:end.toISOString().slice(0,10)}
+          }
+          if(!this._state.themes.length){
+            this._state.themes.push({
+              id: 't_'+Date.now(), titulo:'Frequência ideal de treino', persona:'Mulheres 30+', objetivo:'Levar para avaliação Bella Prime',
+              tags:['treino','emagrecimento'], plataformas:['YouTube','Instagram','Blog'],
+              roteiros:{ youtube:'Título/Thumb/Intro/Tópicos/CTA', reels:'Hook + micro-roteiro + CTA', carrossel:'Slides 1–10 + CTA', estatico:'Headline/copy/hashtags' },
+              datas:{ ideacao: toISO(today), gravacao:'', edicao:'', publicacao:''}, status:'Rascunho', checklist:{thumb:false,legenda:false,agendado:false}, arquivado:false
+            })
+          }
+        }catch(e){ console.error('load error', e) }
+      },
+      save(){ localStorage.setItem(STORE_KEY, JSON.stringify(this._state)) },
+      state(){ return this._state }
+    }
+
+    function toISO(d){ return new Date(d).toISOString().slice(0,10) }
+
+    // ---------------- UI Helpers ----------------
+    function el(html){ const t=document.createElement('template'); t.innerHTML=html.trim(); return t.content.firstElementChild }
+    function pct(a,b){ return b? Math.min(100, Math.round((a/b)*100)) : 0 }
+
+    // ---------------- Render: Dashboard ----------------
+    function renderDashboard(){
+      const s = Data.state();
+      const start = new Date(s.ciclo.inicio), end = new Date(s.ciclo.fim);
+      const daysLeft = Math.max(0, Math.ceil((end - today)/(1000*60*60*24)));
+      document.getElementById('daysLeft').textContent = daysLeft;
+      const label = start.toLocaleDateString('pt-BR', {month:'short'})+ '–' + end.toLocaleDateString('pt-BR', {month:'short', year:'numeric'})
+      document.getElementById('cycleLabel').textContent = label.toUpperCase()
+
+      // KPIs simples
+      const publicados = s.themes.filter(t=>t.status==='Publicado').length
+      document.getElementById('kpiPosts').textContent = publicados
+      const concluidos = s.themes.filter(t=>['Em edição','Publicado'].includes(t.status)).length
+      document.getElementById('kpiConsistency').textContent = pct(concluidos, s.themes.length)+'%'
+      document.getElementById('kpiHabit').textContent = s.habitos[0]?.nome || '—'
+
+      const moods = s.journal.daily.map(d=>Number(d.humor)).filter(Boolean)
+      const avgMood = moods.length? (moods.reduce((a,b)=>a+b,0)/moods.length).toFixed(1): '—'
+      document.getElementById('kpiMood').textContent = avgMood
+
+      // Barras metas
+      const ytTarget = s.metas.yt||0; const ytDone = s.themes.filter(t=>t.plataformas?.includes('YouTube') && t.status==='Publicado').length
+      document.getElementById('barYTLabel').textContent = `${ytDone} / ${ytTarget}`
+      document.getElementById('barYT').style.width = pct(ytDone, ytTarget)+'%'
+
+      const igTarget = s.metas.ig||0; const igDone = s.themes.filter(t=>t.plataformas?.includes('Instagram') && t.status==='Publicado').length
+      document.getElementById('barIGLabel').textContent = `${igDone} / ${igTarget}`
+      document.getElementById('barIG').style.width = pct(igDone, igTarget)+'%'
+
+      // Hoje
+      document.getElementById('todayDate').textContent = new Date().toLocaleDateString('pt-BR', {weekday:'long', day:'2-digit', month:'short'})
+    }
+
+    // ---------------- Render: Habits ----------------
+    function renderHabits(){
+      const box = document.getElementById('habitList'); box.innerHTML=''
+      const s = Data.state();
+      if(!s.habitos.length){
+        box.append(el(`<div class='text-sm opacity-70'>Nenhum hábito ainda. Adicione o primeiro.</div>`))
+      }
+      s.habitos.forEach((h,idx)=>{
+        const item = el(`<div class='flex items-center justify-between gap-3 p-3 rounded-xl bg-[#101010] border border-white/5'>
+          <div>
+            <div class='title text-sm'>${h.nome}</div>
+            <div class='text-xs opacity-70'>Frequência: ${h.frequencia||'DIARIO'}</div>
+          </div>
+          <button class='text-xs px-2 py-1 btn rounded-md' data-del='${idx}'>Remover</button>
+        </div>`)
+        item.querySelector('[data-del]')?.addEventListener('click',()=>{ s.habitos.splice(idx,1); Data.save(); renderHabits() })
+        box.append(item)
+      })
+    }
+
+    // ---------------- Render: Themes ----------------
+    function renderThemes(){
+      const list = document.getElementById('themesList'); list.innerHTML=''
+      const s = Data.state();
+      const q = document.getElementById('searchThemes').value?.toLowerCase()||''
+      const fs = document.getElementById('filterStatus').value||''
+      s.themes
+        .filter(t=>!fs || t.status===fs)
+        .filter(t=>!q || t.titulo.toLowerCase().includes(q))
+        .sort((a,b)=> (b.datas?.publicacao||'').localeCompare(a.datas?.publicacao||''))
+        .forEach(t=>{
+          const statusColor = t.status==='Publicado'? 'border-green-600' : t.status==='Em edição'? 'border-amber-500' : t.status==='Em gravação'? 'border-red-500' : 'border-white/10'
+          const card = el(`<div class='status ${statusColor} rounded-xl p-4 bg-[#101010] border border-white/5'>
+            <div class='flex items-start gap-3'>
+              <div class='flex-1'>
+                <div class='flex items-center gap-3'>
+                  <h4 class='title text-base'>${t.titulo}</h4>
+                  <span class='badge text-xs px-2 py-0.5 rounded'>${t.status}</span>
+                </div>
+                <div class='text-xs opacity-70 mt-1'>${(t.plataformas||[]).join(' • ')}</div>
+                <div class='text-xs opacity-60 mt-2'>Pub.: ${t.datas?.publicacao||'—'}</div>
+              </div>
+              <div class='flex gap-2'>
+                <button class='btn px-2 py-1 rounded-md text-xs' data-open='${t.id}'>Abrir</button>
+                <button class='btn px-2 py-1 rounded-md text-xs' data-del='${t.id}'>Excluir</button>
+              </div>
+            </div>
+          </div>`)
+          card.querySelector('[data-open]')?.addEventListener('click',()=> openTheme(t.id))
+          card.querySelector('[data-del]')?.addEventListener('click',()=>{ if(confirm('Excluir tema?')){ s.themes = s.themes.filter(x=>x.id!==t.id); Data.save(); renderThemes(); renderDashboard(); } })
+          list.append(card)
+        })
+    }
+
+    // ---------------- Theme Modal ----------------
+    let currentThemeId = null
+    function openTheme(id){
+      const s = Data.state();
+      const t = s.themes.find(x=>x.id===id) || { id:null, titulo:'', persona:'', objetivo:'', tags:[], plataformas:[], roteiros:{}, datas:{}, status:'Rascunho', checklist:{} }
+      currentThemeId = t.id
+      document.getElementById('modalThemeTitle').textContent = t.id? 'Editar tema' : 'Novo tema'
+      document.getElementById('themeIdInfo').textContent = t.id || 'novo'
+      // fields
+      fTitulo.value = t.titulo||''; fPersona.value = t.persona||''; fObjetivo.value = t.objetivo||''; fTags.value = (t.tags||[]).join(', ')
+      pYT.checked = !!t.plataformas?.includes('YouTube'); pIG.checked = !!t.plataformas?.includes('Instagram'); pBlog.checked = !!t.plataformas?.includes('Blog')
+      dIdeacao.value = t.datas?.ideacao||''; dGravacao.value = t.datas?.gravacao||''; dEdicao.value = t.datas?.edicao||''; dPublicacao.value = t.datas?.publicacao||''
+      fStatus.value = t.status||'Rascunho'
+      rYT.value = t.roteiros?.youtube||''; rReels.value = t.roteiros?.reels||''; rCarrossel.value = t.roteiros?.carrossel||''; rEstatico.value = t.roteiros?.estatico||''
+      modalTheme.showModal()
+    }
+
+    function saveTheme(){
+      const s = Data.state();
+      const obj = {
+        id: currentThemeId || ('t_'+Date.now()),
+        titulo: fTitulo.value.trim(), persona: fPersona.value.trim(), objetivo: fObjetivo.value.trim(),
+        tags: fTags.value? fTags.value.split(',').map(x=>x.trim()).filter(Boolean):[],
+        plataformas: [pYT.checked&&'YouTube', pIG.checked&&'Instagram', pBlog.checked&&'Blog'].filter(Boolean),
+        roteiros:{ youtube:rYT.value, reels:rReels.value, carrossel:rCarrossel.value, estatico:rEstatico.value },
+        datas:{ ideacao:dIdeacao.value, gravacao:dGravacao.value, edicao:dEdicao.value, publicacao:dPublicacao.value },
+        status: fStatus.value, checklist:{thumb:false,legenda:false,agendado:false}, arquivado:false
+      }
+      const idx = s.themes.findIndex(x=>x.id===obj.id)
+      if(idx>=0) s.themes[idx]=obj; else s.themes.push(obj)
+      Data.save(); modalTheme.close(); renderThemes(); renderDashboard(); buildAgenda()
+    }
+
+    // Export Markdown do tema atual (padrão Jekyll)
+    function exportCurrentMD(){
+      const s = Data.state(); const t = s.themes.find(x=>x.id===currentThemeId); if(!t) return alert('Tema não encontrado')
+      const slug = t.titulo.toLowerCase().normalize('NFD').replace(/[^\w\s-]/g,'').trim().replace(/\s+/g,'-')
+      const md = `---\nlayout: post\ntitle: "${t.titulo}"\ndate: ${t.datas?.publicacao||toISO(today)}\ncategories: [Treino, Bella Prime]\nimage: "/assets/img/posts/${slug}.jpg"\nexcerpt: "${(t.roteiros.estatico||'').split('\n')[0].slice(0,140)}"\nafiliados:\n  - title: "Foam Roller — Liberação miofascial"\n    url: "https://s.shopee.com.br/xxxxx"\n    image: "/assets/img/afiliados/thumb-default.jpg"\n---\n\n## Introdução\n${t.roteiros.youtube||''}\n\n## Reels/Stories\n${t.roteiros.reels||''}\n\n## Carrossel\n${t.roteiros.carrossel||''}\n\n## Post Estático\n${t.roteiros.estatico||''}\n`;
+      download(`${slug}.md`, md)
+    }
+
+    // ---------------- Journal ----------------
+    function openDaily(){
+      dlDate.value = toISO(today)
+      dlFoco.value = ''; dlMITs.value = ''; dlConteudo.value=''; dlTreino.value=''; dlNutricao.value=''; dlSono.value=''; dlGratidao.value=''; dlReflexao.value=''; dlHumor.value=''
+      modalDaily.showModal()
+    }
+    function saveDaily(){
+      const s=Data.state();
+      s.journal.daily.push({ id:'d_'+Date.now(), date: dlDate.value, foco: dlFoco.value, mits: dlMITs.value, conteudo: dlConteudo.value, treino: dlTreino.value, nutricao: dlNutricao.value, sono: dlSono.value, gratidao: dlGratidao.value, reflexao: dlReflexao.value, humor: dlHumor.value })
+      Data.save(); modalDaily.close(); renderJournal(); renderDashboard();
+    }
+    function renderJournal(){
+      const box = document.getElementById('journalList'); box.innerHTML=''
+      const s=Data.state();
+      s.journal.daily.slice(-7).reverse().forEach(d=>{
+        const card = el(`<div class='rounded-xl p-4 bg-[#101010] border border-white/5'>
+          <div class='flex items-center gap-3'><div class='title text-sm'>${new Date(d.date).toLocaleDateString('pt-BR')}</div>
+          <span class='badge text-xs px-2 py-0.5 rounded'>Humor: ${d.humor||'—'}</span></div>
+          <div class='text-sm mt-2'>Foco: ${d.foco||'—'}</div>
+          <div class='text-xs opacity-70 mt-1'>MITs: ${d.mits||'—'}</div>
+        </div>`)
+        box.append(card)
+      })
+    }
+
+    // ---------------- Agenda ----------------
+    function buildAgenda(){
+      const grid = document.getElementById('agendaGrid'); grid.innerHTML=''
+      const monthStr = document.getElementById('agendaMonth').value || toISO(today).slice(0,7)
+      const [y,m] = monthStr.split('-').map(Number)
+      const first = new Date(y, m-1, 1)
+      const last = new Date(y, m, 0)
+      for(let d=1; d<=last.getDate(); d++){
+        const dateISO = toISO(new Date(y, m-1, d))
+        const dayThemes = Data.state().themes.filter(t=> Object.values(t.datas||{}).includes(dateISO))
+        const items = dayThemes.map(t=>{
+          const fase = Object.entries(t.datas||{}).find(([k,v])=>v===dateISO)?.[0] || '—'
+          const faseLabel = {ideacao:'Ideação',gravacao:'Gravação',edicao:'Edição',publicacao:'Publicação'}[fase] || '—'
+          return `<button class='text-left w-full text-xs px-2 py-1 rounded mb-1 bg-black/40 border border-white/10 hover:border-white/20' data-open='${t.id}'>${faseLabel}: ${t.titulo}</button>`
+        }).join('')
+        const cell = el(`<div class='rounded-xl p-3 bg-[#101010] border border-white/5 min-h-[110px]'>
+            <div class='flex items-center justify-between mb-2'>
+              <span class='text-xs opacity-70'>${d.toString().padStart(2,'0')}/${String(m).padStart(2,'0')}</span>
+              <button class='text-[11px] px-2 py-0.5 btn rounded-md' data-add='${dateISO}'>+ Tema</button>
+            </div>
+            <div class='space-y-1'>${items||`<div class='text-xs opacity-50'>Sem itens</div>`}</div>
+        </div>`)
+        cell.querySelectorAll('[data-open]').forEach(b=> b.addEventListener('click',()=> openTheme(b.getAttribute('data-open'))))
+        cell.querySelector('[data-add]').addEventListener('click',()=> quickAddTheme(dateISO))
+        grid.append(cell)
+      }
+    }
+
+    // ---------------- Utilities ----------------
+    function download(filename, text){
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([text], {type:'text/plain'}));
+      a.download = filename; a.click(); URL.revokeObjectURL(a.href)
+    }
+
+    function quickAddTheme(dateISO){
+      const s = Data.state();
+      const id = 't_'+Date.now()
+      s.themes.push({ id, titulo:'Novo tema', persona:'Mulheres 30+', objetivo:'Avaliação Bella Prime', tags:[], plataformas:['Instagram'],
+        roteiros:{ youtube:'', reels:'', carrossel:'', estatico:'' }, datas:{ ideacao: toISO(today), publicacao: dateISO }, status:'Rascunho', checklist:{}, arquivado:false })
+      Data.save(); renderThemes(); renderDashboard(); openTheme(id)
+    }
+
+    // ---------------- Events & Init ----------------
+    document.getElementById('btnNewTheme').addEventListener('click',()=> openTheme(null))
+    document.getElementById('btnSaveTheme').addEventListener('click', saveTheme)
+    document.getElementById('btnExportMD').addEventListener('click', exportCurrentMD)
+
+    document.getElementById('btnDailyLog').addEventListener('click', openDaily)
+    document.getElementById('btnNewDaily').addEventListener('click', openDaily)
+    document.getElementById('btnSaveDaily').addEventListener('click', saveDaily)
+
+    document.getElementById('btnAddHabit').addEventListener('click', ()=>{
+      const nome = prompt('Nome do hábito (ex: Planejar dia anterior)')
+      if(!nome) return
+      const s = Data.state(); s.habitos.push({ id:'h_'+Date.now(), nome, frequencia:'DIARIO', check:{} }); Data.save(); renderHabits()
+    })
+
+    document.getElementById('btnNewIdea').addEventListener('click', ()=>{
+      const titulo = prompt('Título/ideia rápida')
+      if(!titulo) return
+      const s = Data.state(); const id='t_'+Date.now()
+      s.themes.push({ id, titulo, persona:'Mulheres 30+', objetivo:'Avaliação Bella Prime', tags:['ideia'], plataformas:[], roteiros:{}, datas:{ ideacao: toISO(today) }, status:'Rascunho', checklist:{}, arquivado:false })
+      Data.save(); renderThemes(); renderDashboard();
+    })
+
+    document.getElementById('btnWeeklyReview').addEventListener('click', ()=>{
+      const s=Data.state();
+      const now = new Date();
+      const year = now.getFullYear();
+      const week = Math.ceil((((now - new Date(year,0,1)) / 86400000) + new Date(year,0,1).getDay()+1)/7)
+      s.journal.weekly.push({ id:`w_${year}-W${week}`, wins:[], obstaculos:[], metricas:{posts:0,reels:0,leads:0}, ajustes:[], prioridades:[] })
+      Data.save(); alert('Rascunho de Revisão Semanal criado. (ver seção BJ)')
+    })
+
+    document.getElementById('filterStatus').addEventListener('change', renderThemes)
+    document.getElementById('searchThemes').addEventListener('input', renderThemes)
+
+    document.getElementById('btnExportJSON').addEventListener('click', ()=>{
+      download(`flowon-backup-${toISO(today)}.json`, JSON.stringify(Data.state(), null, 2))
+    })
+    document.getElementById('importJSON').addEventListener('change', async (e)=>{
+      const file = e.target.files[0]; if(!file) return
+      const txt = await file.text();
+      try{ Data._state = JSON.parse(txt); Data.save(); renderDashboard(); renderHabits(); renderThemes(); renderJournal(); buildAgenda(); alert('Importado com sucesso!') }
+      catch(err){ alert('Arquivo inválido.'); console.error(err) }
+      e.target.value = ''
+    })
+
+    document.getElementById('agendaMonth').addEventListener('change', buildAgenda)
+
+    // ---- Boot ----
+    Data.load();
+    document.getElementById('agendaMonth').value = toISO(today).slice(0,7)
+    renderDashboard();
+    renderHabits();
+    renderThemes();
+    renderJournal();
+    buildAgenda();
+  </script></body>
+                              </html>
