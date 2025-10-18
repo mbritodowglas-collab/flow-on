@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Flow On — Configurações</title>
+  <link rel="stylesheet" href="../../assets/css/style.css" />
+  <link rel="icon" href="../../assets/img/favicon-32.png" />
+</head>
+<body>
+  <header class="navbar">
+    <div class="nav-inner">
+      <div class="logo">
+        <img src="../../assets/img/logo.svg" alt="Flow On logo" />
+        <span>Flow On</span>
+      </div>
+      <nav class="menu">
+        <a href="../../index.html">🏠 Home</a>
+        <a href="../journal/">📓 Journal</a>
+        <a href="../themes/">🎬 Temas</a>
+        <a href="./" class="active">⚙️ Configurações</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container container--single">
+    <section class="card">
+      <h2>Preferências</h2>
+      <div class="grid-2">
+        <div>
+          <label class="small">Cor do tema (visual)</label>
+          <select id="cfgTheme" class="small" style="width:100%">
+            <option value="gold">Preto + Dourado</option>
+            <option value="red">Preto + Vermelho</option>
+            <option value="clean">Clean (alto contraste)</option>
+          </select>
+        </div>
+        <div>
+          <label class="small">Semana inicia em</label>
+          <select id="cfgWeek" class="small" style="width:100%">
+            <option value="monday">Segunda</option>
+            <option value="sunday">Domingo</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Backup & Restauração (local)</h2>
+      <p class="muted small">Exporta/Importa os dados salvos no seu navegador (localStorage).</p>
+      <div style="display:flex; gap:8px; flex-wrap:wrap">
+        <button id="btnExport" class="btn">Exportar .json</button>
+        <label for="fileImport" class="btn" style="cursor:pointer">Importar .json</label>
+        <input id="fileImport" type="file" accept="application/json" style="display:none" />
+        <button id="btnReset" class="btn">Apagar dados locais</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Integrações (futuro)</h2>
+      <ul class="small" style="margin:0">
+        <li>Google Docs (sincronizar roteiros)</li>
+        <li>Calendário (espelhar agenda de publicações)</li>
+        <li>GPT (assistente manual com GPT Plus)</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>Flow On © 2025 — Planeje. Execute. Evolua.</p>
+  </footer>
+
+  <script src="../../assets/js/settings.js"></script>
+</body>
+</html>
