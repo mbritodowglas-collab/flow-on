@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Flow On — Journal</title>
+  <link rel="stylesheet" href="../../assets/css/style.css" />
+  <link rel="stylesheet" href="../../assets/css/journal.css" />
+  <link rel="icon" href="../../assets/img/favicon-32.png" />
+</head>
+<body>
+  <header class="navbar">
+    <div class="nav-inner">
+      <div class="logo">
+        <img src="../../assets/img/logo.svg" alt="Flow On logo" />
+        <span>Flow On</span>
+      </div>
+      <nav class="menu">
+        <a href="../../index.html">🏠 Home</a>
+        <a href="./" class="active">📓 Journal</a>
+        <a href="../themes/">🎬 Temas</a>
+        <a href="../settings/">⚙️ Configurações</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container container--single">
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="habits">Hábitos</button>
+      <button class="tab-btn" data-tab="daily">Daily Log</button>
+      <button class="tab-btn" data-tab="monthly">Monthly Log</button>
+      <button class="tab-btn" data-tab="quarter">Trimestral</button>
+    </div>
+
+    <section id="tab-habits" class="tab-view active">
+      <div class="card">
+        <div class="card-head">
+          <h2>Hábitos</h2>
+          <button id="btnAddHabit" class="btn">+ Hábito</button>
+        </div>
+        <div id="habitsTable"></div>
+        <div class="muted" style="margin-top:6px">Aro verde = feito. Percentual é calculado por semana.</div>
+      </div>
+    </section>
+
+    <section id="tab-daily" class="tab-view">
+      <div class="card">
+        <h2>Daily Log</h2>
+        <div class="grid-2">
+          <div class="form">
+            <label>Data</label>
+            <input type="date" id="dlDate" />
+            <label>Foco (1 frase)</label>
+            <input id="dlFocus" placeholder="Foco do dia" />
+            <label>3 MITs (separe por ;)</label>
+            <input id="dlMITs" placeholder="Ex.: Gravar; Editar; Publicar" />
+            <label>Gratidão (3 itens; ;)</label>
+            <input id="dlGratidao" placeholder="Ex.: Família; Saúde; Cliente X" />
+            <label>Humor (1-10)</label>
+            <input id="dlMood" type="number" min="1" max="10" />
+            <label>Notas / Reflexão</label>
+            <textarea id="dlNotes" rows="5" placeholder="Anotações do dia"></textarea>
+            <div>
+              <button id="btnSaveDaily" class="btn">Salvar Daily</button>
+            </div>
+          </div>
+          <div>
+            <h3 class="small" style="margin:0 0 8px">Últimos registros</h3>
+            <div id="dailyList"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-monthly" class="tab-view">
+      <div class="card">
+        <h2>Monthly Log</h2>
+        <div id="monthlySummary" class="monthly-summary"></div>
+        <div class="divider"></div>
+        <textarea id="monthlyNotes" rows="6" placeholder="Vitórias, travas, aprendizados..."></textarea>
+      </div>
+    </section>
+
+    <section id="tab-quarter" class="tab-view">
+      <div class="card">
+        <h2>Trimestral</h2>
+        <div class="grid-3">
+          <textarea id="qGoals" rows="6" placeholder="Metas do ciclo"></textarea>
+          <textarea id="qHabitsUp" rows="6" placeholder="Hábitos a reforçar"></textarea>
+          <textarea id="qHabitsDown" rows="6" placeholder="Hábitos a substituir"></textarea>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>Flow On © 2025 — Planeje. Execute. Evolua.</p>
+  </footer>
+
+  <script src="../../assets/js/journal.js"></script>
+</body>
+</html>
