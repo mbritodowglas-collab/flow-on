@@ -24,7 +24,7 @@
   </header>
 
   <main class="container">
-    <!-- IDEIAS (somente lista + usar no rascunho) -->
+    <!-- IDEIAS: só listar + excluir -->
     <section class="card">
       <div class="card-head">
         <h2>Banco de Ideias</h2>
@@ -33,26 +33,30 @@
       <div id="ideasList"></div>
     </section>
 
-    <!-- RASCUNHOS (POSTS sem data, agrupados por tipo) -->
+    <!-- RASCUNHOS: botão para criar a partir das ideias -->
     <section class="card">
-      <h2>Rascunhos</h2>
-      <div class="muted small" style="margin-bottom:6px">Um rascunho = 1 destino. Ex.: YouTube <u>ou</u> Reels <u>ou</u> Carrossel…</div>
+      <div class="card-head">
+        <h2>Rascunhos</h2>
+        <button id="btnCreateDraft" class="btn">+ Criar rascunho</button>
+      </div>
+      <div class="muted small" style="margin-bottom:6px">
+        Um rascunho = 1 destino (YouTube, Reels/TikTok, Carrossel, Imagem estática ou Blog).
+      </div>
       <div id="draftsList"></div>
     </section>
 
-    <!-- PLANEJAMENTO 30 DIAS -->
+    <!-- PLANEJAMENTO 30 DIAS (posts com data) -->
     <section class="card">
       <div class="card-head">
         <h2>Planejamento (próximos 30 dias)</h2>
-        <button id="btnNewFromBlank" class="btn">+ Post em branco</button>
       </div>
       <div id="planList"></div>
     </section>
 
-    <!-- ANÁLISE -->
+    <!-- ANÁLISE (publicados aguardando análise/arquivo) -->
     <section class="card">
       <h2>Análise de Conteúdo</h2>
-      <div class="muted small" style="margin-bottom:6px">Preencha métricas dos posts publicados e arquive quando encerrar.</div>
+      <div class="muted small" style="margin-bottom:6px">Preencha métricas e arquive quando encerrar.</div>
       <div id="insightsList"></div>
     </section>
   </main>
@@ -61,6 +65,35 @@
     <p>Flow On © 2025 — Planeje. Execute. Evolua.</p>
   </footer>
 
-  <script src="../../assets/js/themes.js?v=2"></script>
+  <!-- MODAL: criar rascunho a partir de uma ideia -->
+  <dialog id="modalCreateDraft" class="modal">
+    <form method="dialog" class="modal-box">
+      <div class="card-head" style="margin-bottom:8px">
+        <h3>Novo rascunho</h3>
+        <button class="btn">Fechar</button>
+      </div>
+      <div class="grid-2">
+        <div class="form">
+          <label>Escolha a ideia</label>
+          <select id="draftIdeaSelect"></select>
+        </div>
+        <div class="form">
+          <label>Destino</label>
+          <select id="draftTypeSelect">
+            <option value="yt_long">YouTube (vídeo longo)</option>
+            <option value="short">Reels / TikTok (vídeo curto)</option>
+            <option value="carousel">Carrossel</option>
+            <option value="static">Imagem estática</option>
+            <option value="blog">Blog</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-top:10px">
+        <button id="btnConfirmCreateDraft" class="btn">Criar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="../../assets/js/themes.js?v=3"></script>
 </body>
 </html>
