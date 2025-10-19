@@ -6,6 +6,20 @@
   <title>Flow On — Hábitos</title>
   <link rel="stylesheet" href="../../assets/css/style.css" />
   <link rel="icon" href="../../assets/img/favicon-32.png" />
+  <style>
+    /* complementos visuais específicos desta página */
+    .hab-row{padding:10px;border:1px solid var(--border);border-radius:12px;margin:10px 0;background:rgba(255,255,255,.02)}
+    .hab-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+    .hab-title{font-weight:700}
+    .week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;align-items:center}
+    .day-cell{display:flex;flex-direction:column;align-items:center;gap:6px}
+    .day-name{font-size:.78rem;color:var(--muted)}
+    .mark{width:18px;height:18px;border-radius:50%;border:2px solid var(--border);background:transparent;cursor:default;opacity:.9}
+    .mark.today{cursor:pointer;border-color:#2ecc71}
+    .mark.done{background:linear-gradient(180deg,#50fa7b,#2ecc71);border-color:transparent}
+    .mark.miss{background:linear-gradient(180deg,#ff8a8a,#ff6b6b);border-color:transparent}
+    .controls{display:flex;gap:8px;flex-wrap:wrap}
+  </style>
 </head>
 <body>
 <header class="navbar">
@@ -20,15 +34,16 @@
 
 <main class="container">
   <section class="card">
-    <h2>Hábitos</h2>
-    <div id="habitsList"></div>
-    <div style="margin-top:10px"><button id="btnAddHabit" class="btn">+ Hábito</button></div>
+    <div class="card-head">
+      <h2 style="margin:0">Hábitos</h2>
+      <button id="btnAdd" class="btn small">+ Hábito</button>
+    </div>
+    <div id="habList"></div>
   </section>
 </main>
 
 <footer class="footer"><p>Flow On © 2025 — Planeje. Execute. Evolua.</p></footer>
 
-<script src="../../assets/js/core.js?v=1"></script>
-<script src="../../assets/js/habits.js?v=1"></script>
+<script src="../../assets/js/habits.js?v=3"></script>
 </body>
 </html>
