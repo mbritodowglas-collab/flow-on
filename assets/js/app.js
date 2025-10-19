@@ -1,4 +1,4 @@
-/* ====== Flow On — Home (visão geral) ====== */
+/* ====== Flow On — Home (visão geral, semana com status) ====== */
 
 const STORE_KEY = 'flowon.v1';
 const Data = {
@@ -8,7 +8,7 @@ const Data = {
       const raw = localStorage.getItem(STORE_KEY);
       if(raw) this._s = JSON.parse(raw);
 
-      // seed inicial (apenas na primeira vez)
+      // seeds
       if(!this._s.habits?.length){
         this._s.habits = [
           {id:'h1', name:'Planejar dia anterior'},
@@ -24,7 +24,7 @@ const Data = {
           objetivo:'Chamar para avaliação',
           status:'Rascunho',
           platforms:['YouTube','Instagram'],
-          dates:{ gravacao:'', publicacao:'' },
+          dates:{ publicacao:'' }, // data única
           scripts:{ yt:'', reels:'' },
           archived:false
         }];
@@ -35,7 +35,7 @@ const Data = {
   get(){ return this._s }
 };
 
-/* ====== Utils ====== */
+/* Utils */
 const toISO = d => new Date(d).toISOString().slice(0,10);
 function weekRange(date){
   const d = new Date(date); const day = (d.getDay()+6)%7; // seg=0
@@ -49,18 +49,17 @@ function weekKey(date=new Date()){
   return `${d.getFullYear()}-W${String(week).padStart(2,'0')}`;
 }
 
-/* ====== Render Home ====== */
+/* Render Home */
 function renderHabitsSummary(){
   const el = document.getElementById('habits-summary');
   const s = Data.get();
-  const dates = weekRange(new Date());
   const wk = weekKey();
-
   let html = '';
+
   s.habits.forEach(h=>{
     h.checks = h.checks || {}; h.checks[wk] = h.checks[wk] || Array(7).fill(false);
-    const pct = Math.round(100 * h.checks[wk].filter(Boolean).length / 7);
     const dots = h.checks[wk].map(v=> `<span class="ring-dot ${v?'done':''}"></span>`).join('');
+    const pct = Math.round(100 * h.checks[wk].filter(Boolean).length / 7);
     html += `
       <div class="h-row">
         <div class="h-name">${h.name}</div>
@@ -79,18 +78,32 @@ function renderContentSummary(){
   const el = document.getElementById('content-summary');
   const s = Data.get();
   const dates = weekRange(new Date());
-  let html = '';
+  const today = toISO(new Date());
 
+  const statusBadge = (dateStr)=>{
+    if(!dateStr) return '';
+    if(dateStr < today) return `<span class="badge" style="background:#321; border-color:#633; color:#f8d7da">Atrasado</span>`;
+    if(dateStr === today) return `<span class="badge" style="background:#332b00; border-color:#806b00; color:#ffec99">Pendente</span>`;
+    return `<span class="badge" style="background:#102915; border-color:#1f6f34; color:#b7ffd1">Agendado</span>`;
+  };
+
+  let html = '';
   dates.forEach(d=>{
     const items = s.themes.filter(t=> !t.archived && t.status==='Agendado' && t.dates?.publicacao === d);
     const list = items.length
-      ? items.map(t=> `<div class="small badge" style="display:inline-block; margin:2px 4px 0 0">${t.title} — ${(t.platforms||[]).join(' • ')}</div>`).join('')
+      ? items.map(t=> `
+          <div class="small badge" style="display:flex; align-items:center; gap:6px; margin:2px 4px 0 0">
+            <span>${t.title} — ${(t.platforms||[]).join(' • ')}</span>
+            ${statusBadge(t.dates?.publicacao)}
+          </div>
+        `).join('')
       : `<span class="muted">Sem itens</span>`;
+
     html += `
       <div class="list-day">
         <div class="list-day-head">
           <span>${new Date(d).toLocaleDateString('pt-BR',{weekday:'short', day:'2-digit'})}</span>
-          <span class="muted">agendados</span>
+          <span class="muted">semana</span>
         </div>
         <div>${list}</div>
       </div>
@@ -120,9 +133,8 @@ function renderJournalSummary(){
   el.innerHTML = html;
 }
 
-/* ====== Boot ====== */
+/* Boot */
 document.addEventListener('DOMContentLoaded', ()=>{
-  // marca o item ativo do menu
   document.querySelectorAll('.menu a').forEach(a=>{
     a.classList.toggle('active', a.getAttribute('href').endsWith('/index.html') || a.getAttribute('href')==='./index.html');
   });
