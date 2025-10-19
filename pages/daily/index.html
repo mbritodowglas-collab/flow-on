@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Flow On — Daily Log</title>
+  <link rel="stylesheet" href="../../assets/css/style.css" />
+  <link rel="icon" href="../../assets/img/favicon-32.png" />
+</head>
+<body>
+<header class="navbar">
+  <div class="nav-inner">
+    <div class="logo"><img src="../../assets/img/logo.svg" alt="logo" /><span>Flow On</span></div>
+    <nav class="menu">
+      <a href="../../index.html">🏠 Home</a>
+      <a href="../habits/">✅ Hábitos</a>
+      <a href="./" class="active">🗒️ Daily</a>
+      <a href="../monthly/">🗓️ Monthly</a>
+      <a href="../quarterly/">📆 Trimestral</a>
+      <a href="../reports/">📊 Relatórios</a>
+      <a href="../themes/">🎬 Temas</a>
+      <a href="../settings/">⚙️ Configurações</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+  <section class="card" id="tab-daily">
+    <h2>Daily Log</h2>
+    <div class="form" style="max-width:800px">
+      <label>Data</label>
+      <select id="dailyDate"></select>
+
+      <label>Foco (1 frase)</label>
+      <input id="dailyFocus" type="text" placeholder="Foco do dia" />
+
+      <label>3 MITs (separe por ;)</label>
+      <input id="dailyMITs" type="text" placeholder="Ex.: Gravar; Editar; Publicar" />
+
+      <label>Gratidão (3 itens; ;)</label>
+      <input id="dailyGrat" type="text" placeholder="Ex.: Família; Saúde; Cliente X" />
+
+      <label>Humor (1-10)</label>
+      <input id="dailyMood" type="number" min="1" max="10" />
+
+      <label>Notas / Reflexão</label>
+      <textarea id="dailyNotes" rows="6" placeholder="Anotações do dia"></textarea>
+
+      <div style="margin-top:8px">
+        <button id="btnSaveDaily" class="btn">Salvar Daily</button>
+      </div>
+    </div>
+
+    <div style="display:flex; align-items:center; gap:10px; margin-top:6px; flex-wrap:wrap">
+      <h3 style="margin:0">Últimos registros</h3>
+      <button id="btnToggleDailyMonth" class="btn small">Ver todos do mês</button>
+    </div>
+    <div id="dailyRecent"></div>
+
+    <div id="dailyMonth" style="display:none;">
+      <h3 class="muted" style="margin:6px 0 8px">Registros do mês atual</h3>
+      <div id="dailyMonthList"></div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer"><p>Flow On © 2025 — Planeje. Execute. Evolua.</p></footer>
+
+<script src="../../assets/js/core.js?v=1"></script>
+<script src="../../assets/js/daily.js?v=1"></script>
+</body>
+</html>
