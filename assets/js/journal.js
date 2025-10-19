@@ -159,11 +159,24 @@ let viewMonth = new Date().getMonth(); // 0..11
 let monthFilter = 'all'; // all | pending | done | moved
 
 function setMonthLabelAndCounters(){
-  // Label
   const label = `${monthNamePT(viewMonth)} de ${viewYear}`;
   document.getElementById('monthLabel').textContent = label.charAt(0).toUpperCase() + label.slice(1);
 
-  // Counters
+  // preencher selects
+  const ySel = document.getElementById('jumpYear');
+  if(ySel && !ySel.childElementCount){
+    const cur = new Date().getFullYear();
+    for(let y=cur-5; y<=cur+5; y++){
+      const opt = document.createElement('option');
+      opt.value = y; opt.textContent = y;
+      ySel.appendChild(opt);
+    }
+  }
+  if(ySel) ySel.value = String(viewYear);
+  const mSel = document.getElementById('jumpMonth');
+  if(mSel) mSel.value = String(viewMonth);
+
+  // counters
   const s = Data.get();
   const items = s.journal.month.items.filter(it=>{
     const d = parseLocal(it.date);
@@ -172,7 +185,6 @@ function setMonthLabelAndCounters(){
   const total = items.length;
   const done  = items.filter(i=>i.done).length;
   const pend  = total - done;
-  const moved = items.filter(i=> i.movedFrom && i.movedFrom.year===viewYear && i.movedFrom.month===viewMonth-1).length;
   document.getElementById('monthCounters').innerHTML =
     `Pendentes: <b>${pend}</b> • Concluídos: <b>${done}</b> • Total: <b>${total}</b>`;
 }
@@ -183,6 +195,13 @@ function goPrevMonth(){
 }
 function goNextMonth(){
   if(viewMonth===11){ viewMonth=0; viewYear++; } else { viewMonth++; }
+  setMonthLabelAndCounters();
+  drawMonthList();
+}
+function jumpToSelected(){
+  const y = Number(document.getElementById('jumpYear').value);
+  const m = Number(document.getElementById('jumpMonth').value);
+  viewYear = y; viewMonth = m;
   setMonthLabelAndCounters();
   drawMonthList();
 }
@@ -224,7 +243,7 @@ function moveAllNextMonth(){
     if(!it.done && d.getFullYear()===viewYear && d.getMonth()===viewMonth){
       it.date = nextMonthDate(it.date);
       it.movedAt = Date.now();
-      it.movedFrom = { year:viewYear, month:viewMonth }; // guarda de onde veio
+      it.movedFrom = { year:viewYear, month:viewMonth };
       moved++;
     }
   });
@@ -234,7 +253,6 @@ function moveAllNextMonth(){
 
   const banner = document.getElementById('monthBanner');
   if(moved>0){
-    // aponta para o mês DESTINO
     const destYear  = viewMonth===11 ? viewYear+1 : viewYear;
     const destMonth = viewMonth===11 ? 0 : viewMonth+1;
     banner.style.display='block';
@@ -263,11 +281,9 @@ function drawMonthList(){
       const dd = parseLocal(it.date);
       if(dd.getFullYear()!==viewYear || dd.getMonth()!==viewMonth) return false;
 
-      // filtros
       if(monthFilter==='pending' && it.done) return false;
       if(monthFilter==='done'     && !it.done) return false;
       if(monthFilter==='moved'){
-        // aparece se veio do mês anterior E chegou nos últimos 48h
         if(!it.movedFrom) return false;
         const fromPrev = (it.movedFrom.year=== (viewMonth===0?viewYear-1:viewYear)) &&
                          (it.movedFrom.month=== (viewMonth===0?11:viewMonth-1));
@@ -373,6 +389,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
   document.getElementById('btnMoveAllNextMonth').onclick = moveAllNextMonth;
   document.getElementById('btnPrevMonth').onclick = goPrevMonth;
   document.getElementById('btnNextMonth').onclick = goNextMonth;
+  document.getElementById('btnJump').onclick = jumpToSelected;
   document.querySelectorAll('#monthFilters .btn').forEach(b=>{
     b.onclick = ()=> setMonthFilter(b.dataset.filter);
   });
