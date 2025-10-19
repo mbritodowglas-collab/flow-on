@@ -41,21 +41,40 @@
     <!-- DAILY LOG -->
     <section class="card tab-pane" id="tab-daily">
       <h2>Daily Log</h2>
-      <div class="form" style="max-width:800px">
-        <label>Data</label>
-        <select id="dailyDate"></select>
-        <label>Foco (1 frase)</label>
-        <input id="dailyFocus" placeholder="Foco do dia" />
-        <label>3 MITs (separe por ;)</label>
-        <input id="dailyMITs" placeholder="Ex.: Gravar; Editar; Publicar" />
-        <label>Gratidão (3 itens; ;)</label>
-        <input id="dailyGrat" placeholder="Ex.: Família; Saúde; Cliente X" />
-        <label>Humor (1-10)</label>
-        <input id="dailyMood" type="number" min="1" max="10" />
-        <label>Notas / Reflexão</label>
-        <textarea id="dailyNotes" rows="6" placeholder="Anotações do dia"></textarea>
-        <div style="margin-top:8px"><button id="btnSaveDaily" class="btn">Salvar Daily</button></div>
-      </div>
+<div class="form" style="max-width:800px">
+  <label>Data</label>
+  <select id="dailyDate"></select>
+
+  <label>Foco (1 frase)</label>
+  <input id="dailyFocus" type="text" placeholder="Foco do dia" />
+
+  <label>3 MITs (separe por ;)</label>
+  <input id="dailyMITs" type="text" placeholder="Ex.: Gravar; Editar; Publicar" />
+
+  <label>Gratidão (3 itens; ;)</label>
+  <input id="dailyGrat" type="text" placeholder="Ex.: Família; Saúde; Cliente X" />
+
+  <label>Humor (1-10)</label>
+  <input id="dailyMood" type="number" min="1" max="10" />
+
+  <label>Notas / Reflexão</label>
+  <textarea id="dailyNotes" rows="6" placeholder="Anotações do dia"></textarea>
+
+  <div style="margin-top:8px">
+    <button id="btnSaveDaily" class="btn">Salvar Daily</button>
+  </div>
+</div>
+
+<div style="display:flex; align-items:center; gap:10px; margin-top:6px; flex-wrap:wrap">
+  <h3 style="margin:0">Últimos registros</h3>
+  <button id="btnToggleDailyMonth" class="btn small">Ver todos do mês</button>
+</div>
+<div id="dailyRecent"></div>
+
+<div id="dailyMonth" style="display:none;">
+  <h3 class="muted" style="margin:6px 0 8px">Registros do mês atual</h3>
+  <div id="dailyMonthList"></div>
+</div>
 
       <div style="display:flex; align-items:center; gap:10px; margin-top:16px">
         <h3 style="margin:0">Últimos registros</h3>
