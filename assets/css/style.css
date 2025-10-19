@@ -486,3 +486,94 @@ hr.sep{ border:0; border-top:1px solid var(--border); margin:12px 0 }
 }
 .habit-pct { text-align: right; font-variant-numeric: tabular-nums; opacity:.9; }
 
+/* ===== Flow On — Topbar + Dock Nav ===== */
+
+:root{
+  --bg: #0b0b0b;
+  --surface: rgba(20,20,20,.7);
+  --text: #cfcfd3;
+  --text-strong: #ffffff;
+  --brand: #f2a65a;           /* dourado/rosé */
+  --brand-ghost: rgba(242,166,90,.18);
+  --border: rgba(255,255,255,.08);
+  --radius: 14px;
+  --radius-lg: 18px;
+}
+
+/* Topbar (logo centralizada visualmente com respiro) */
+.fo-topbar{
+  position: sticky; top: 0; z-index: 50;
+  display: flex; justify-content: center; align-items: center;
+  padding: 10px 12px;
+  background: var(--surface);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+}
+
+.fo-brand{
+  display: inline-flex; align-items: center; gap: 10px;
+  text-decoration: none;
+}
+.fo-logo{
+  width: 28px; height: 28px; display: block;
+  filter: drop-shadow(0 0 6px var(--brand-ghost));
+}
+.fo-brand-text{
+  color: var(--brand);
+  font-weight: 600; letter-spacing: .6px; font-size: 1.05rem;
+}
+
+/* Dock de navegação */
+.fo-nav{
+  position: sticky; top: 60px; z-index: 40; /* fica logo abaixo do header */
+  display: flex; justify-content: center; align-items: center;
+  gap: 22px; padding: 14px 10px; margin: 10px auto 18px;
+  width: min(980px, 96%);
+  background: var(--surface);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+
+/* Item */
+.fo-item{
+  --size: 54px;
+  text-decoration: none; color: var(--text);
+  display: grid; place-items: center; gap: 6px;
+  padding: 8px 10px; min-width: 74px;
+  border-radius: var(--radius);
+  transition: transform .18s ease, color .18s ease, background .18s ease, box-shadow .18s ease;
+}
+
+.fo-item .fo-ico{
+  font-size: 1.4rem; line-height: 1;
+}
+.fo-item .fo-label{
+  font-size: .9rem; font-weight: 500;
+}
+
+/* Hover/Focus */
+.fo-item:hover,
+.fo-item:focus-visible{
+  color: var(--text-strong);
+  background: rgba(255,255,255,.04);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+/* Estado ativo */
+.fo-item.is-active{
+  color: var(--text-strong);
+  background: linear-gradient(180deg, rgba(242,166,90,.16), rgba(242,166,90,.06));
+  box-shadow: 0 6px 14px rgba(242,166,90,.12), inset 0 0 0 1px rgba(242,166,90,.35);
+}
+
+/* Responsivo: em telas muito estreitas, reduz gap e fonte */
+@media (max-width: 380px){
+  .fo-nav{ gap: 14px; }
+  .fo-item{ min-width: 66px; padding: 8px 8px; }
+  .fo-item .fo-label{ font-size: .85rem; }
+}
+
+/* Se existir qualquer marca antiga no canto, esconda */
+#flowon-badge, .fo-watermark, .flowon-mark{ display: none !important; }
