@@ -30,7 +30,7 @@ function daysBack(n=14){
   const end = new Date();
   return [...Array(n)].map((_,i)=> toLocalISO(new Date(end.getFullYear(), end.getMonth(), end.getDate()-i)) );
 }
-function daysOfMonth(year, monthIndex){ // monthIndex: 0..11
+function daysOfMonth(year, monthIndex){ // 0..11
   const last = new Date(year, monthIndex+1, 0).getDate();
   return [...Array(last)].map((_,i)=> toLocalISO(new Date(year, monthIndex, i+1)) );
 }
@@ -156,7 +156,7 @@ function drawDailyRecent(){
 /* ===== Monthly Log — estado de visualização ===== */
 let viewYear  = new Date().getFullYear();
 let viewMonth = new Date().getMonth(); // 0..11
-let monthFilter = 'all'; // all | pending | done
+let monthFilter = 'all'; // all | pending | done | moved
 
 function setMonthLabelAndCounters(){
   // Label
@@ -165,8 +165,6 @@ function setMonthLabelAndCounters(){
 
   // Counters
   const s = Data.get();
-  const start = new Date(viewYear, viewMonth, 1);
-  const end   = new Date(viewYear, viewMonth+1, 0);
   const items = s.journal.month.items.filter(it=>{
     const d = parseLocal(it.date);
     return !it.archived && d.getFullYear()===viewYear && d.getMonth()===viewMonth;
@@ -174,7 +172,9 @@ function setMonthLabelAndCounters(){
   const total = items.length;
   const done  = items.filter(i=>i.done).length;
   const pend  = total - done;
-  document.getElementById('monthCounters').innerHTML = `Pendentes: <b>${pend}</b> • Concluídos: <b>${done}</b> • Total: <b>${total}</b>`;
+  const moved = items.filter(i=> i.movedFrom && i.movedFrom.year===viewYear && i.movedFrom.month===viewMonth-1).length;
+  document.getElementById('monthCounters').innerHTML =
+    `Pendentes: <b>${pend}</b> • Concluídos: <b>${done}</b> • Total: <b>${total}</b>`;
 }
 function goPrevMonth(){
   if(viewMonth===0){ viewMonth=11; viewYear--; } else { viewMonth--; }
@@ -218,12 +218,13 @@ function addMonthItem(){
 
 function moveAllNextMonth(){
   const s = Data.get();
-  // pendentes do mês visualizado
   let moved = 0;
   s.journal.month.items.forEach(it=>{
     const d = parseLocal(it.date);
     if(!it.done && d.getFullYear()===viewYear && d.getMonth()===viewMonth){
       it.date = nextMonthDate(it.date);
+      it.movedAt = Date.now();
+      it.movedFrom = { year:viewYear, month:viewMonth }; // guarda de onde veio
       moved++;
     }
   });
@@ -233,10 +234,15 @@ function moveAllNextMonth(){
 
   const banner = document.getElementById('monthBanner');
   if(moved>0){
+    // aponta para o mês DESTINO
+    const destYear  = viewMonth===11 ? viewYear+1 : viewYear;
+    const destMonth = viewMonth===11 ? 0 : viewMonth+1;
     banner.style.display='block';
-    banner.innerHTML = `✅ <b>${moved}</b> item(ns) movidos para <b>${monthNamePT((viewMonth+1)%12)}${viewMonth===11?' de '+(viewYear+1):''}</b>.
-      <button id="jumpNext" class="btn small" style="margin-left:8px">Ir para próximo mês</button>`;
-    document.getElementById('jumpNext').onclick = ()=>{ goNextMonth(); banner.style.display='none'; };
+    banner.innerHTML = `✅ <b>${moved}</b> item(ns) movidos para <b>${monthNamePT(destMonth)} de ${destYear}</b>.
+      <button id="jumpNext" class="btn small" style="margin-left:8px">Ir para próximo mês</button>
+      <button id="showMoved" class="btn small" style="margin-left:6px">Ver movidos</button>`;
+    document.getElementById('jumpNext').onclick = ()=>{ viewYear=destYear; viewMonth=destMonth; setMonthLabelAndCounters(); setMonthFilter('moved'); banner.style.display='none'; };
+    document.getElementById('showMoved').onclick = ()=>{ setMonthFilter('moved'); };
   }else{
     banner.style.display='block';
     banner.textContent = 'Nenhum item pendente para mover.';
@@ -248,12 +254,29 @@ function drawMonthList(){
   const s = Data.get();
   const box = document.getElementById('monthList'); box.innerHTML='';
   const currentMonthDays = daysOfMonth(viewYear, viewMonth);
+  const now = Date.now();
 
   let any = false;
   currentMonthDays.forEach(d=>{
-    let items = s.journal.month.items.filter(it=> !it.archived && it.date===d);
-    if(monthFilter==='pending') items = items.filter(it=> !it.done);
-    if(monthFilter==='done')     items = items.filter(it=>  it.done);
+    let items = s.journal.month.items.filter(it=> {
+      if(it.archived || it.date!==d) return false;
+      const dd = parseLocal(it.date);
+      if(dd.getFullYear()!==viewYear || dd.getMonth()!==viewMonth) return false;
+
+      // filtros
+      if(monthFilter==='pending' && it.done) return false;
+      if(monthFilter==='done'     && !it.done) return false;
+      if(monthFilter==='moved'){
+        // aparece se veio do mês anterior E chegou nos últimos 48h
+        if(!it.movedFrom) return false;
+        const fromPrev = (it.movedFrom.year=== (viewMonth===0?viewYear-1:viewYear)) &&
+                         (it.movedFrom.month=== (viewMonth===0?11:viewMonth-1));
+        const recent   = (now - (it.movedAt||0)) <= 1000*60*60*48;
+        return fromPrev || recent;
+      }
+      return true;
+    });
+
     if(!items.length) return;
 
     any = true;
@@ -266,10 +289,13 @@ function drawMonthList(){
     const list = document.createElement('div');
 
     items.forEach(it=>{
+      const movedBadge = (it.movedAt && (now - it.movedAt) <= 1000*60*60*48)
+        ? `<span class="badge" style="margin-left:6px">recém-movido</span>` : '';
+
       const row = document.createElement('div'); row.className='small badge';
       row.style.display='flex'; row.style.alignItems='center'; row.style.justifyContent='space-between'; row.style.margin='4px 0 0';
       row.innerHTML = `
-        <span>${it.title}</span>
+        <span>${it.title} ${movedBadge}</span>
         <span style="display:flex; gap:6px; flex-wrap:wrap">
           <button class="btn small" data-done="${it.id}">${it.done?'Desmarcar':'Concluir'}</button>
           <button class="btn small" data-move="${it.id}">Mover p/ próximo mês</button>
@@ -281,7 +307,10 @@ function drawMonthList(){
         it.done = !it.done; Data.save(); setMonthLabelAndCounters(); drawMonthList();
       };
       row.querySelector('[data-move]').onclick = ()=>{
-        it.date = nextMonthDate(it.date); Data.save(); setMonthLabelAndCounters(); drawMonthList();
+        it.date = nextMonthDate(it.date);
+        it.movedAt = Date.now();
+        it.movedFrom = { year:viewYear, month:viewMonth };
+        Data.save(); setMonthLabelAndCounters(); drawMonthList();
       };
       row.querySelector('[data-edit]').onclick = ()=>{
         const nt = prompt('Título', it.title||'') ?? it.title;
