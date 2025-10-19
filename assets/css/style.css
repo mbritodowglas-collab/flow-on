@@ -577,3 +577,26 @@ hr.sep{ border:0; border-top:1px solid var(--border); margin:12px 0 }
 
 /* Se existir qualquer marca antiga no canto, esconda */
 #flowon-badge, .fo-watermark, .flowon-mark{ display: none !important; }
+
+/* === 21 dias de hábitos === */
+.fo-dots {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.fo-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border, #333);
+  background: rgba(255,255,255,0.05); /* bolinha vazia visível */
+  opacity: 0.9;
+  transition: all .2s ease-in-out;
+}
+
+.fo-dot.on {
+  background: linear-gradient(180deg, #50fa7b, #2ecc71);
+  border-color: transparent;
+  box-shadow: 0 0 4px rgba(80,250,123,0.6);
+}
