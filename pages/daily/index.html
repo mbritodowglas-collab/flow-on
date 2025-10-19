@@ -46,9 +46,9 @@
       <label>Notas / Reflexão</label>
       <textarea id="dailyNotes" rows="6" placeholder="Anotações do dia"></textarea>
 
+      <!-- Só o Salvar (removido o Excluir do topo) -->
       <div style="margin-top:8px; display:flex; gap:10px; flex-wrap:wrap">
         <button id="btnSaveDaily" type="button" class="btn">💾 Salvar Daily</button>
-        <button id="btnDeleteDaily" type="button" class="btn danger">🗑️ Excluir dia</button>
       </div>
     </div>
 
@@ -245,13 +245,9 @@ function bindToggleMonth(){
   };
 }
 
-/* Bind dos botões principais */
+/* Bind dos botões principais (apenas salvar e troca de data) */
 function bindTopButtons(){
   document.getElementById('btnSaveDaily').onclick = saveDaily;
-  document.getElementById('btnDeleteDaily').onclick = ()=>{
-    const d = document.getElementById('dailyDate').value;
-    if(confirm('Excluir este registro diário?')) deleteDaily(d);
-  };
   document.getElementById('dailyDate').onchange = ()=>{
     const d = document.getElementById('dailyDate').value;
     const s = J(); fillForm(d, s.journal.daily.byDate[d] || null);
@@ -272,3 +268,4 @@ document.addEventListener('DOMContentLoaded', ()=>{
 <!-- ============= FIM JS EMBUTIDO ============= -->
 </body>
 </html>
+```0
