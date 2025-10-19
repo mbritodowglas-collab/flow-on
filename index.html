@@ -221,6 +221,23 @@
       return [];
     }
 
+    // === Leitura unificada: marcação por semana OU por data ===
+    function isChecked(habit, iso){
+      // Semana: checks["YYYY-Www"][7]
+      if (habit.checks && typeof habit.checks === 'object'){
+        const wk  = weekKeyOfISO(iso);
+        const idx = dayIndexOfISO(iso);
+        const arr = habit.checks[wk];
+        if (Array.isArray(arr) && arr.length > idx) return !!arr[idx];
+      }
+      // Data: aceita várias chaves comuns
+      const byDateKeys = ['byDate','days','dates','checksByDate'];
+      for (const k of byDateKeys){
+        if (habit[k] && typeof habit[k] === 'object' && (iso in habit[k])) return !!habit[k][iso];
+      }
+      return false;
+    }
+
     // ------- Progresso Geral -------
     (function renderProgress(){
       const habits = getHabits();
@@ -228,13 +245,9 @@
       let done=0,total=0;
 
       habits.forEach(h=>{
-        h.checks ||= {};
         weekDays.forEach(iso=>{
-          const wk = weekKeyOfISO(iso);
-          const idx= dayIndexOfISO(iso);
-          const arr = (h.checks[wk] ||= Array(7).fill(false));
           total += 1;
-          if (arr[idx]) done += 1;
+          if (isChecked(h, iso)) done += 1;
         });
       });
       const habitsPct = total ? Math.round(done/total*100)+'%' : '—';
@@ -296,15 +309,10 @@
       let html='';
 
       habits.forEach(h=>{
-        h.checks ||= {};
-        const dots = weekDays.map(iso=>{
-          const wk  = weekKeyOfISO(iso);
-          const idx = dayIndexOfISO(iso);
-          const arr = (h.checks[wk] ||= Array(7).fill(false));
-          return `<span class="ring-dot ${arr[idx]?'done':''}"></span>`;
-        }).join('');
-        const wk = weekKeyOfISO(weekDays[0]);
-        const pct = Math.round(((h.checks[wk]||[]).filter(Boolean).length/7)*100)||0;
+        const dots = weekDays
+          .map(iso => `<span class="ring-dot ${isChecked(h, iso) ? 'done' : ''}"></span>`)
+          .join('');
+        const pct = Math.round((weekDays.filter(iso => isChecked(h, iso)).length/7)*100)||0;
         html += `<div class="h-row">
           <div class="h-name">${h.name||h.title||'Hábito'}</div>
           <div class="h-dots">${dots}<div class="h-pct">${pct}%</div></div>
@@ -324,24 +332,21 @@
       const habits = getHabits();
       if(!habits.length){ btn.style.display='none'; return; }
 
-      function last3WeeksArr(checksObj){
-        const keys = Object.keys(checksObj||{}).sort(); // cronológico
-        const last3 = keys.slice(-3);
-        let arr = [];
-        last3.forEach(k=>{ arr = arr.concat((checksObj[k]||[]).slice(0,7)); });
-        while(arr.length<21) arr.unshift(false);
-        return arr.slice(-21);
-      }
-
       function build(){
-        const habitsNow = getHabits(); // re-lê (caso tenha marcado no outro módulo)
+        const today = todayISO();
+        const days = [...Array(21)].map((_,i)=> addDays(today, -(20-i))); // últimos 21
+        const habitsNow = getHabits();
         panel.innerHTML='';
         habitsNow.forEach(h=>{
-          const series = last3WeeksArr(h.checks||{});
           const row = document.createElement('div'); row.className='fo-habit-row';
           row.innerHTML = `<div class="fo-habit-name">${h.name||h.title||'Hábito'}</div>`;
           const grid = document.createElement('div'); grid.className='fo-dots';
-          series.forEach(v=>{ const dot=document.createElement('div'); dot.className='fo-dot'+(v?' on':''); grid.appendChild(dot); });
+          days.forEach(iso=>{
+            const dot=document.createElement('div');
+            dot.className='fo-dot' + (isChecked(h, iso) ? ' on' : '');
+            dot.title = iso;
+            grid.appendChild(dot);
+          });
           row.appendChild(grid); panel.appendChild(row);
         });
       }
