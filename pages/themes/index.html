@@ -3,188 +3,203 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Flow On — Conteúdos</title>
+  <title>Flow On — Temas</title>
+
+  <!-- CSS principal -->
   <link rel="stylesheet" href="../../assets/css/style.css" />
+
+  <!-- FAVICONS -->
+  <link rel="icon" href="../../assets/img/favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="../../assets/img/favicon-32.png" sizes="32x32" type="image/png" />
+  <link rel="apple-touch-icon" href="../../assets/img/icons/icon-192.png" />
+
+  <!-- PWA -->
+  <link rel="manifest" href="../../manifest.webmanifest" />
+  <meta name="theme-color" content="#0b0d10" />
+
   <style>
-    /* ------- estilos específicos desta página ------- */
-    .hub-wrap{max-width:1080px;margin:0 auto}
-    .tile{
-      display:flex; flex-direction:column; gap:10px;
-      padding:18px 16px; border-radius:16px;
-      background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.03));
-      border:1px solid rgba(255,255,255,.08);
-      box-shadow:0 6px 20px rgba(0,0,0,.25);
-      transition:transform .12s ease, box-shadow .12s ease, border-color .12s ease;
+    :root{
+      --surface: rgba(20,20,20,.7);
+      --text:#cfcfd3; --text-strong:#fff;
+      --brand:#f2a65a; --brand-ghost:rgba(242,166,90,.18);
+      --border: rgba(255,255,255,.08);
+      --radius:14px; --radius-lg:18px;
     }
-    .tile:hover{box-shadow:0 10px 26px rgba(0,0,0,.35); border-color:rgba(255,255,255,.18)}
-    .tile h3{margin:0; display:flex; align-items:center; gap:8px}
-    .emoji{font-size:20px; line-height:1; padding:6px 8px; border-radius:10px;
-           background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.08)}
-    .tile .muted{opacity:.7}
-    .list{display:flex; flex-direction:column; gap:8px; margin-top:10px}
-    .item{
-      display:flex; align-items:center; justify-content:space-between; gap:10px;
-      padding:10px 12px; border-radius:12px; border:1px solid var(--border);
-      background:rgba(255,255,255,.02);
+
+    /* NAVBAR / MENU padrão Home */
+    .fo-topbar{
+      position:sticky; top:0; z-index:50;
+      display:flex; justify-content:center; align-items:center;
+      padding:10px 12px; background:var(--surface);
+      backdrop-filter:blur(8px); border-bottom:1px solid var(--border);
     }
-    .item small{opacity:.65}
-    .flex{display:flex; gap:8px; flex-wrap:wrap}
-    .section-title{display:flex; align-items:center; justify-content:space-between; gap:10px; margin:16px 0 8px}
-    .pill{font-size:.85rem; padding:4px 8px; border:1px solid var(--border); border-radius:999px; opacity:.8}
-    .badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border:1px solid var(--border);border-radius:999px;font-size:.85rem;opacity:.85}
-    .filters{position:sticky; top:64px; z-index:5; display:flex; gap:8px; overflow:auto; padding:6px 2px; background:linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,0))}
-    .filters .btn.small{white-space:nowrap}
-    .filters .btn.small.active{outline:2px solid rgba(255,255,255,.18); background:rgba(255,255,255,.06)}
-    .empty{border:1px dashed var(--border); border-radius:12px; padding:14px; text-align:center; opacity:.75}
-    .kpi-range{font-size:.85rem; opacity:.8; padding:4px 10px; border:1px solid var(--border); border-radius:999px}
-    /* cores por seção */
-    .t-ideas{background:linear-gradient(180deg, rgba(124,166,255,.12), rgba(124,166,255,.05))}
-    .t-drafts{background:linear-gradient(180deg, rgba(255,163,102,.14), rgba(255,163,102,.06))}
-    .t-plan{background:linear-gradient(180deg, rgba(87,201,114,.12), rgba(87,201,114,.06))}
-    .t-insights{background:linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03))}
+    .fo-brand{display:inline-flex;align-items:center;gap:10px;text-decoration:none}
+    .fo-logo{width:28px;height:28px;display:block;filter:drop-shadow(0 0 6px var(--brand-ghost))}
+    .fo-brand-text{color:var(--brand);font-weight:600;letter-spacing:.6px;font-size:1.05rem}
+
+    .fo-nav{
+      position:sticky; top:60px; z-index:40;
+      display:flex; justify-content:center; align-items:center; gap:22px;
+      padding:14px 10px; margin:10px auto 18px; width:min(980px,96%);
+      background:var(--surface); backdrop-filter:blur(8px);
+      border:1px solid var(--border); border-radius:var(--radius-lg);
+    }
+    .fo-item{
+      text-decoration:none; color:var(--text);
+      display:grid; place-items:center; gap:6px;
+      padding:8px 10px; min-width:74px; border-radius:var(--radius);
+      transition:transform .18s ease,color .18s ease,background .18s ease,box-shadow .18s ease;
+    }
+    .fo-item .fo-ico{font-size:1.4rem;line-height:1}
+    .fo-item .fo-label{font-size:.9rem;font-weight:500}
+    .fo-item:hover,.fo-item:focus-visible{
+      color:var(--text-strong); background:rgba(255,255,255,.04); transform:translateY(-1px); outline:none;
+    }
+    .fo-item.is-active{
+      color:var(--text-strong);
+      background:linear-gradient(180deg,rgba(242,166,90,.16),rgba(242,166,90,.06));
+      box-shadow:0 6px 14px rgba(242,166,90,.12), inset 0 0 0 1px rgba(242,166,90,.35);
+    }
+    @media (max-width:380px){
+      .fo-nav{gap:14px}
+      .fo-item{min-width:66px;padding:8px 8px}
+      .fo-item .fo-label{font-size:.85rem}
+    }
+
+    /* Corpo principal */
+    .card h2{margin-top:0}
+    .filters{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+    .filters .btn.active{background:var(--brand);color:#000;font-weight:600}
+    .item{border:1px solid var(--border);border-radius:var(--radius);padding:10px;margin-bottom:10px;background:rgba(255,255,255,.02)}
+    .empty{color:var(--muted);padding:12px;text-align:center}
   </style>
 </head>
+
 <body>
-  <header class="navbar">
-    <div class="nav-inner" style="justify-content:space-between">
-      <nav class="menu">
-        <a href="../../index.html">🏠 Home</a>
-        <a href="../journal/">📓 Journal</a>
-        <a href="../reports/">📊 Relatórios</a>
-        <a href="../settings/">⚙️ Configurações</a>
-      </nav>
-    </div>
+  <!-- TOPBAR + MENU -->
+  <header class="fo-topbar">
+    <a class="fo-brand" href="../../index.html">
+      <img src="../../assets/img/logo.svg" alt="Flow On logo" class="fo-logo" />
+      <span class="fo-brand-text">Flow On</span>
+    </a>
   </header>
 
-  <main class="container hub-wrap">
-    <section class="card" style="text-align:center">
-      <h1>Flow On — Conteúdos</h1>
-      <p class="muted">Banco de ideias, rascunhos por formato e planejamento de publicações.</p>
+  <nav class="fo-nav" role="navigation" aria-label="Navegação principal">
+    <a class="fo-item" href="../../index.html">
+      <span class="fo-ico">🏠</span><span class="fo-label">Home</span>
+    </a>
+    <a class="fo-item" href="../journal/">
+      <span class="fo-ico">📓</span><span class="fo-label">Journal</span>
+    </a>
+    <a class="fo-item is-active active" href="./">
+      <span class="fo-ico">🎬</span><span class="fo-label">Temas</span>
+    </a>
+    <a class="fo-item" href="../settings/">
+      <span class="fo-ico">⚙️</span><span class="fo-label">Configurações</span>
+    </a>
+  </nav>
+
+  <!-- CONTEÚDO -->
+  <main class="container">
+    <section class="card">
+      <h2>Banco de Ideias</h2>
+      <div class="controls">
+        <button id="btnAddIdea" class="btn small">+ Ideia</button>
+      </div>
+      <div id="ideasCount" class="muted small" style="margin-top:6px"></div>
+      <div id="ideasList"></div>
     </section>
 
-    <!-- ====== BLOCO 1: BANCO DE IDEIAS ====== -->
-    <section class="tile t-ideas">
-      <div class="section-title">
-        <h3><span class="emoji">💡</span> Banco de Ideias</h3>
-        <div class="flex">
-          <button id="btnAddIdea" class="btn small">+ Ideia</button>
-          <span class="badge" id="ideasCount">0 itens</span>
-        </div>
-      </div>
-
-      <div id="ideasList" class="list">
-        <div class="empty">Sem ideias por aqui. Clique em <b>+ Ideia</b> para adicionar.</div>
-      </div>
-    </section>
-
-    <!-- ====== BLOCO 2: RASCUNHOS POR FORMATO ====== -->
-    <section class="tile t-drafts">
-      <div class="section-title">
-        <h3><span class="emoji">✍️</span> Rascunhos</h3>
-        <div class="flex">
-          <button id="btnCreateDraft" class="btn small">+ Criar rascunho</button>
-          <span class="pill">1 rascunho = 1 destino</span>
-        </div>
-      </div>
-
-      <!-- filtros sticky com estado ativo -->
+    <section class="card">
+      <h2>Rascunhos</h2>
       <div class="filters">
         <button class="btn small active" data-filter="all">Todos</button>
         <button class="btn small" data-filter="youtube">YouTube</button>
         <button class="btn small" data-filter="short">Reels/TikTok</button>
         <button class="btn small" data-filter="carousel">Carrossel</button>
-        <button class="btn small" data-filter="static">Imagem estática</button>
+        <button class="btn small" data-filter="static">Imagem</button>
         <button class="btn small" data-filter="blog">Blog</button>
       </div>
+      <div class="controls">
+        <button id="btnCreateDraft" class="btn small">+ Criar rascunho</button>
+      </div>
+      <div id="draftsList"></div>
+    </section>
 
-      <div id="draftsList" class="list">
-        <div class="empty">Sem rascunhos. Clique em <b>+ Criar rascunho</b> e escolha um destino.</div>
+    <section class="card">
+      <h2>Planejamento (30 dias)</h2>
+      <div class="controls">
+        <button id="btnNewBlankPost" class="btn small">+ Post direto</button>
+        <span id="planRangeLabel" class="muted small"></span>
+      </div>
+      <div id="planList"></div>
+    </section>
+
+    <section class="card" id="analysisForm">
+      <h2>Análise de Publicações</h2>
+      <div class="grid-2">
+        <div>
+          <label>Título</label>
+          <input type="text" id="anTitle" />
+        </div>
+        <div>
+          <label>Formato</label>
+          <select id="anFormat">
+            <option value="youtube">YouTube</option>
+            <option value="short">Reels/TikTok</option>
+            <option value="carousel">Carrossel</option>
+            <option value="static">Imagem</option>
+            <option value="blog">Blog</option>
+          </select>
+        </div>
+      </div>
+      <div class="grid-3">
+        <div><label>Data</label><input type="date" id="anDate" /></div>
+        <div><label>Status</label>
+          <select id="anStatus">
+            <option value="posted">Publicado</option>
+            <option value="pending">Pendente</option>
+          </select>
+        </div>
+      </div>
+      <div class="grid-4">
+        <div><label>Views</label><input type="number" id="anViews" min="0" /></div>
+        <div><label>Likes</label><input type="number" id="anLikes" min="0" /></div>
+        <div><label>Coments</label><input type="number" id="anComments" min="0" /></div>
+        <div><label>Cliques</label><input type="number" id="anClicks" min="0" /></div>
+      </div>
+      <div>
+        <label>Notas / Insights</label>
+        <textarea id="anNotes" rows="3"></textarea>
+      </div>
+      <div class="controls">
+        <button id="btnSaveAnalysis" class="btn small">💾 Salvar análise</button>
+        <button id="btnArchivePost" class="btn small">📦 Arquivar</button>
+        <button id="btnDeletePost" class="btn small danger">🗑️ Limpar formulário</button>
       </div>
     </section>
 
-    <!-- ====== BLOCO 3: PLANEJAMENTO (PRÓXIMOS 30 DIAS) ====== -->
-    <section class="tile t-plan">
-      <div class="section-title">
-        <h3><span class="emoji">📅</span> Planejamento (próximos 30 dias)</h3>
-        <div class="flex">
-          <span class="kpi-range" id="planRangeLabel">—</span>
-          <a href="./calendar.html" class="btn small">Ver calendário</a>
-          <button id="btnNewBlankPost" class="btn small">+ Post em branco</button>
-        </div>
-      </div>
-
-      <div id="planList" class="list">
-        <div class="empty">Sem itens agendados neste intervalo.</div>
-      </div>
-    </section>
-
-    <!-- ====== BLOCO 4: ANÁLISE DE CONTEÚDO ====== -->
-    <section class="tile t-insights">
-      <div class="section-title">
-        <h3><span class="emoji">📊</span> Análise de Conteúdo</h3>
-        <div class="flex"><span class="pill">preencha métricas e arquive</span></div>
-      </div>
-
-      <div class="form" id="analysisForm" style="max-width:920px">
-        <div class="grid-4">
-          <div><label>Título/tema</label><input id="anTitle" placeholder="Tema da publicação" /></div>
-          <div><label>Formato</label>
-            <select id="anFormat">
-              <option value="youtube">YouTube</option>
-              <option value="short">Reels/TikTok</option>
-              <option value="carousel">Carrossel</option>
-              <option value="static">Imagem estática</option>
-              <option value="blog">Blog</option>
-            </select>
-          </div>
-          <div><label>Data</label><input id="anDate" type="date" /></div>
-          <div><label>Status</label>
-            <select id="anStatus">
-              <option value="posted">Publicado</option>
-              <option value="returned">Devolvido p/ rascunho</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="grid-4">
-          <div><label>Views</label><input id="anViews" type="number" min="0" /></div>
-          <div><label>Likes</label><input id="anLikes" type="number" min="0" /></div>
-          <div><label>Comments</label><input id="anComments" type="number" min="0" /></div>
-          <div><label>Cliques/CTA</label><input id="anClicks" type="number" min="0" /></div>
-        </div>
-
-        <label>Observações</label>
-        <textarea id="anNotes" rows="5" placeholder="Insights, hipóteses, próximos testes…"></textarea>
-
-        <div class="flex" style="margin-top:8px">
-          <button id="btnSaveAnalysis" class="btn">Salvar análise</button>
-          <button id="btnArchivePost" class="btn">Arquivar</button>
-          <button id="btnDeletePost" class="btn danger">Excluir</button>
-        </div>
-      </div>
-
-      <div class="section-title" style="margin-top:16px">
-        <h3 class="muted">Últimas análises</h3>
-        <div class="flex"><button id="btnShowArchived" class="btn small">Ver arquivados</button></div>
-      </div>
-      <div id="analysisRecent" class="list">
-        <div class="empty">Sem análises recentes.</div>
-      </div>
+    <section class="card">
+      <h2>Análises Recentes</h2>
+      <div id="analysisRecent"></div>
     </section>
   </main>
 
-  <footer class="footer"><p>Flow On © 2025 — Planeje. Execute. Evolua.</p></footer>
+  <footer class="footer">
+    <p>Flow On © 2025 — Planeje. Execute. Evolua.</p>
+  </footer>
 
-  <script src="../../assets/js/core.js?v=4"></script>
-  <script src="../../assets/js/themes.js?v=4"></script>
+  <!-- Scripts -->
+  <script src="../../assets/js/themes.js?v=5"></script>
+
+  <!-- Service Worker -->
   <script>
-    // Visual: estado ativo nos filtros
-    document.querySelectorAll('.filters .btn').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-        document.querySelectorAll('.filters .btn').forEach(b=>b.classList.remove('active'));
-        btn.classList.add('active');
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('../../service-worker.js', { scope: '../../' })
+          .catch(err => console.warn('[PWA] erro SW:', err));
       });
-    });
+    }
   </script>
 </body>
 </html>
