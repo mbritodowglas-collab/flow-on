@@ -1,4 +1,4 @@
-/* ====== Flow On — Temas & Roteiros (modelo Tema + Post) ====== */
+/* ====== Flow On — Temas & Roteiros (Ideia -> Rascunho -> Agendado/Publicado) ====== */
 const STORE_KEY = 'flowon.v2';
 
 const Data = {
@@ -7,22 +7,10 @@ const Data = {
     const raw = localStorage.getItem(STORE_KEY);
     if(raw){ this._s = JSON.parse(raw); return; }
 
-    // migração a partir do v1, se existir
-    const rawV1 = localStorage.getItem('flowon.v1');
-    if(rawV1){
-      const old = JSON.parse(rawV1);
-      this._s.themes = (old.themes||[]).map(t=>({ id:t.id, title:t.title, persona:t.persona||'', objetivo:t.objetivo||'', archived: t.archived||false }));
-      this._s.posts  = (old.themes||[]).filter(t=>t.dates?.publicacao).map(t=>({
-        id:'p_'+t.id, themeId:t.id, type:'yt_long', date:t.dates.publicacao,
-        status:'Agendado', script:(t.scripts?.yt||''), analytics:{views:0,likes:0,comments:0,clicks:0,notes:''}, archived:false
-      }));
-      this.save(); return;
-    }
-
-    // seed novo
+    // seed inicial mínimo
     this._s = {
-      themes: [{ id:'t1', title:'Dopamina e motivação no treino', persona:'Mulheres 30+', objetivo:'Chamar para avaliação', archived:false }],
-      posts: []
+      themes: [], // ideias
+      posts: []   // posts (rascunho/agendado/publicado)
     };
     this.save();
   },
@@ -30,28 +18,23 @@ const Data = {
   get(){ return this._s }
 };
 
-/* utils */
+/* utils (datas locais) */
 const toLocalISO = (date) => {
-  const y = date.getFullYear();
-  const m = String(date.getMonth()+1).padStart(2,'0');
-  const d = String(date.getDate()).padStart(2,'0');
+  const y = date.getFullYear(), m = String(date.getMonth()+1).padStart(2,'0'), d = String(date.getDate()).padStart(2,'0');
   return `${y}-${m}-${d}`;
 };
-const parseLocal = (iso) => { const [y,m,d]= (iso||'').split('-').map(Number); return new Date(y,(m||1)-1,d||1); };
+const parseLocal = (iso) => { const [y,m,d]=(iso||'').split('-').map(Number); return new Date(y,(m||1)-1,d||1); };
 function daysAhead(n = 30){
   const start = new Date();
-  return [...Array(n)].map((_,i)=>{ const d = new Date(start.getFullYear(), start.getMonth(), start.getDate()+i); return toLocalISO(d) });
+  return [...Array(n)].map((_,i)=> toLocalISO(new Date(start.getFullYear(), start.getMonth(), start.getDate()+i)) );
 }
 
-/* ===== IDEIAS ===== */
+/* ====== IDEIAS (somente listar + excluir) ====== */
 function drawIdeas(){
-  const box = document.getElementById('ideasList'); box.innerHTML = '';
+  const box = document.getElementById('ideasList'); box.innerHTML='';
   const { themes } = Data.get();
 
-  if(!themes.length){
-    box.innerHTML = `<div class="muted">Sem ideias ainda.</div>`;
-    return;
-  }
+  if(!themes.length){ box.innerHTML = `<div class="muted">Sem ideias ainda. Clique em <b>+ Ideia</b>.</div>`; return; }
 
   themes.filter(t=>!t.archived).forEach(t=>{
     const row = document.createElement('div'); row.className='list-day';
@@ -59,14 +42,13 @@ function drawIdeas(){
       <div class="list-day-head">
         <span class="small">${t.title}</span>
         <span>
-          <a class="btn small" href="editor.html?themeId=${t.id}">Usar no rascunho</a>
           <button class="btn small" data-del="${t.id}">Excluir</button>
         </span>
       </div>`;
     row.querySelector('[data-del]').onclick = ()=>{
       const s = Data.get();
       s.themes = s.themes.filter(x=>x.id!==t.id);
-      // também remove posts órfãos
+      // remove posts órfãos (se houver)
       s.posts = s.posts.filter(p=>p.themeId!==t.id);
       Data.save(); drawIdeas(); drawDrafts(); drawPlan(); drawInsights();
     };
@@ -74,13 +56,13 @@ function drawIdeas(){
   });
 }
 
-/* ===== RASCUNHOS (posts sem data) ===== */
+/* ====== RASCUNHOS (posts sem data) ====== */
 function drawDrafts(){
-  const box = document.getElementById('draftsList'); box.innerHTML = '';
+  const box = document.getElementById('draftsList'); box.innerHTML='';
   const s = Data.get();
   const drafts = s.posts.filter(p=> p.status==='Rascunho' && !p.archived);
 
-  if(!drafts.length){ box.innerHTML = `<div class="muted">Sem rascunhos no momento.</div>`; return; }
+  if(!drafts.length){ box.innerHTML = `<div class="muted">Sem rascunhos no momento. Clique em <b>+ Criar rascunho</b>.</div>`; return; }
 
   drafts.forEach(p=>{
     const theme = s.themes.find(t=>t.id===p.themeId);
@@ -102,24 +84,22 @@ function drawDrafts(){
   });
 }
 
-/* ===== PLANEJAMENTO 30 DIAS (posts com data) ===== */
+/* ====== PLANEJAMENTO 30 DIAS (posts com data) ====== */
 function drawPlan(){
-  const box = document.getElementById('planList'); box.innerHTML = '';
+  const box = document.getElementById('planList'); box.innerHTML='';
   const s = Data.get();
   const dates = daysAhead(30);
 
   dates.forEach(d=>{
-    const dayWrap = document.createElement('div'); dayWrap.className='list-day';
-    const display = parseLocal(d).toLocaleDateString('pt-BR',{weekday:'short', day:'2-digit'});
-    dayWrap.innerHTML = `
+    const wrap = document.createElement('div'); wrap.className='list-day';
+    wrap.innerHTML = `
       <div class="list-day-head">
-        <span>${display}</span>
+        <span>${parseLocal(d).toLocaleDateString('pt-BR',{weekday:'short', day:'2-digit'})}</span>
         <span class="muted">planejamento</span>
       </div>`;
-
-    const items = s.posts.filter(p=> !p.archived && p.status!=='Rascunho' && p.date===d);
     const list = document.createElement('div');
 
+    const items = s.posts.filter(p=> !p.archived && p.status!=='Rascunho' && p.date===d);
     if(!items.length){
       list.innerHTML = `<span class="muted">Sem itens</span>`;
     }else{
@@ -138,7 +118,7 @@ function drawPlan(){
           </span>`;
 
         row.querySelector('[data-back]').onclick = ()=>{
-          p.status = 'Rascunho'; p.date = ''; Data.save(); drawPlan(); drawDrafts();
+          p.status = 'Rascunho'; p.date=''; Data.save(); drawPlan(); drawDrafts();
         };
         row.querySelector('[data-ok]').onclick = ()=>{
           p.status = 'Publicado'; Data.save(); drawPlan(); drawInsights();
@@ -147,12 +127,12 @@ function drawPlan(){
       });
     }
 
-    dayWrap.appendChild(list);
-    box.appendChild(dayWrap);
+    wrap.appendChild(list);
+    box.appendChild(wrap);
   });
 }
 
-/* ===== ANÁLISE (posts publicados, não arquivados) ===== */
+/* ====== ANÁLISE (publicados não arquivados) ====== */
 function drawInsights(){
   const box = document.getElementById('insightsList'); box.innerHTML='';
   const s = Data.get();
@@ -203,7 +183,44 @@ function drawInsights(){
   });
 }
 
-/* ===== Boot ===== */
+/* ====== MODAL: criar rascunho a partir de uma ideia ====== */
+function openCreateDraftModal(){
+  const s = Data.get();
+  const ideas = s.themes.filter(t=>!t.archived);
+  const modal = document.getElementById('modalCreateDraft');
+  const selIdea = document.getElementById('draftIdeaSelect');
+
+  selIdea.innerHTML = '';
+  if(!ideas.length){
+    selIdea.innerHTML = `<option value="">(Não há ideias — crie uma primeiro)</option>`;
+  }else{
+    ideas.forEach(t=>{
+      const opt = document.createElement('option');
+      opt.value = t.id; opt.textContent = t.title;
+      selIdea.appendChild(opt);
+    });
+  }
+
+  modal.showModal();
+
+  document.getElementById('btnConfirmCreateDraft').onclick = ()=>{
+    const themeId = selIdea.value;
+    const type = document.getElementById('draftTypeSelect').value;
+    if(!themeId){ alert('Selecione uma ideia.'); return; }
+
+    // cria post rascunho e remove a ideia do banco
+    const postId = 'p_'+Date.now();
+    s.posts.push({ id:postId, themeId, type, date:'', status:'Rascunho', script:'', analytics:{views:0,likes:0,comments:0,clicks:0,notes:''}, archived:false });
+    s.themes = s.themes.filter(t=>t.id!==themeId); // saiu do banco de ideias
+    Data.save();
+
+    modal.close();
+    // vai direto para o editor
+    location.href = `editor.html?postId=${postId}`;
+  };
+}
+
+/* ====== Boot ====== */
 document.addEventListener('DOMContentLoaded', ()=>{
   // marca menu ativo
   document.querySelectorAll('.menu a').forEach(a=>{
@@ -213,20 +230,13 @@ document.addEventListener('DOMContentLoaded', ()=>{
   Data.load();
   drawIdeas(); drawDrafts(); drawPlan(); drawInsights();
 
-  // nova ideia
+  // adicionar ideia
   document.getElementById('btnAddIdea').onclick = ()=>{
     const title = prompt('Título da ideia:'); if(!title) return;
-    const s = Data.get();
-    s.themes.push({ id:'t_'+Date.now(), title, persona:'', objetivo:'', archived:false });
+    const s = Data.get(); s.themes.push({ id:'t_'+Date.now(), title, persona:'', objetivo:'', archived:false });
     Data.save(); drawIdeas();
   };
 
-  // criar post em branco (sem tema) -> cria tema "Sem título"
-  document.getElementById('btnNewFromBlank').onclick = ()=>{
-    const s = Data.get();
-    const theme = { id:'t_'+Date.now(), title:'Sem título', persona:'', objetivo:'', archived:false };
-    s.themes.push(theme);
-    s.posts.push({ id:'p_'+Date.now(), themeId:theme.id, type:'yt_long', date:'', status:'Rascunho', script:'', analytics:{views:0,likes:0,comments:0,clicks:0,notes:''}, archived:false });
-    Data.save(); location.href = 'editor.html?postId='+s.posts[s.posts.length-1].id;
-  };
+  // criar rascunho (lista de ideias + tipo)
+  document.getElementById('btnCreateDraft').onclick = openCreateDraftModal;
 });
