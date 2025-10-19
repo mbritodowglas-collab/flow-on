@@ -61,16 +61,31 @@
       <div id="dailyRecent"></div>
     </section>
 
-    <!-- MONTHLY LOG (AGENDA DO MÊS) -->
+    <!-- MONTHLY LOG -->
     <section class="card tab-pane" id="tab-monthly">
-      <div class="card-head" style="align-items:flex-end; gap:8px">
+      <div class="card-head" style="align-items:flex-end; gap:10px; flex-wrap:wrap">
         <h2>Monthly Log</h2>
+
+        <!-- Navegação de mês -->
+        <div class="btn-group">
+          <button id="btnPrevMonth" class="btn small">⬅️ Mês anterior</button>
+          <div id="monthLabel" class="small" style="padding:6px 10px; border:1px solid var(--border); border-radius:10px"></div>
+          <button id="btnNextMonth" class="btn small">Próximo mês ➡️</button>
+        </div>
+
+        <!-- Filtros -->
         <div id="monthFilters" class="btn-group">
           <button class="btn small" data-filter="all">Todos</button>
           <button class="btn small" data-filter="pending">Pendentes</button>
           <button class="btn small" data-filter="done">Concluídos</button>
         </div>
+
+        <!-- Contadores -->
+        <div id="monthCounters" class="small muted"></div>
       </div>
+
+      <div id="monthBanner" class="small" style="display:none; margin-bottom:8px; padding:8px; border:1px dashed var(--border); border-radius:10px"></div>
+
       <div class="muted small" style="margin-bottom:8px">
         Programe as <b>atividades do mês</b>. Elas aparecem na Home como <b>agenda semanal</b>.
       </div>
@@ -111,6 +126,6 @@
     <p>Flow On © 2025 — Planeje. Execute. Evolua.</p>
   </footer>
 
-  <script src="../../assets/js/journal.js?v=3"></script>
+  <script src="../../assets/js/journal.js?v=4"></script>
 </body>
 </html>
