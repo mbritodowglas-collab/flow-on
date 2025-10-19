@@ -6,12 +6,7 @@ const Data = {
   load(){
     const raw = localStorage.getItem(STORE_KEY);
     if(raw){ this._s = JSON.parse(raw); return; }
-
-    // seed inicial mínimo
-    this._s = {
-      themes: [], // ideias
-      posts: []   // posts (rascunho/agendado/publicado)
-    };
+    this._s = { themes: [], posts: [] };
     this.save();
   },
   save(){ localStorage.setItem(STORE_KEY, JSON.stringify(this._s)) },
@@ -29,40 +24,43 @@ function daysAhead(n = 30){
   return [...Array(n)].map((_,i)=> toLocalISO(new Date(start.getFullYear(), start.getMonth(), start.getDate()+i)) );
 }
 
-/* ====== IDEIAS (somente listar + excluir) ====== */
+/* ===== IDEIAS ===== */
 function drawIdeas(){
   const box = document.getElementById('ideasList'); box.innerHTML='';
   const { themes } = Data.get();
 
-  if(!themes.length){ box.innerHTML = `<div class="muted">Sem ideias ainda. Clique em <b>+ Ideia</b>.</div>`; return; }
+  if(!themes.length){
+    box.innerHTML = `<div class="muted">Sem ideias ainda. Clique em <b>+ Ideia</b>.</div>`;
+    return;
+  }
 
   themes.filter(t=>!t.archived).forEach(t=>{
     const row = document.createElement('div'); row.className='list-day';
     row.innerHTML = `
       <div class="list-day-head">
         <span class="small">${t.title}</span>
-        <span>
-          <button class="btn small" data-del="${t.id}">Excluir</button>
-        </span>
+        <span><button class="btn small" data-del="${t.id}">Excluir</button></span>
       </div>`;
     row.querySelector('[data-del]').onclick = ()=>{
       const s = Data.get();
       s.themes = s.themes.filter(x=>x.id!==t.id);
-      // remove posts órfãos (se houver)
-      s.posts = s.posts.filter(p=>p.themeId!==t.id);
+      s.posts = s.posts.filter(p=>p.themeId!==t.id); // limpa órfãos
       Data.save(); drawIdeas(); drawDrafts(); drawPlan(); drawInsights();
     };
     box.appendChild(row);
   });
 }
 
-/* ====== RASCUNHOS (posts sem data) ====== */
+/* ===== RASCUNHOS (posts sem data) ===== */
 function drawDrafts(){
   const box = document.getElementById('draftsList'); box.innerHTML='';
   const s = Data.get();
   const drafts = s.posts.filter(p=> p.status==='Rascunho' && !p.archived);
 
-  if(!drafts.length){ box.innerHTML = `<div class="muted">Sem rascunhos no momento. Clique em <b>+ Criar rascunho</b>.</div>`; return; }
+  if(!drafts.length){
+    box.innerHTML = `<div class="muted">Sem rascunhos no momento. Clique em <b>+ Criar rascunho</b>.</div>`;
+    return;
+  }
 
   drafts.forEach(p=>{
     const theme = s.themes.find(t=>t.id===p.themeId);
@@ -84,7 +82,7 @@ function drawDrafts(){
   });
 }
 
-/* ====== PLANEJAMENTO 30 DIAS (posts com data) ====== */
+/* ===== PLANEJAMENTO 30 DIAS (posts com data) ===== */
 function drawPlan(){
   const box = document.getElementById('planList'); box.innerHTML='';
   const s = Data.get();
@@ -132,7 +130,7 @@ function drawPlan(){
   });
 }
 
-/* ====== ANÁLISE (publicados não arquivados) ====== */
+/* ===== ANÁLISE (publicados não arquivados) ===== */
 function drawInsights(){
   const box = document.getElementById('insightsList'); box.innerHTML='';
   const s = Data.get();
@@ -183,7 +181,7 @@ function drawInsights(){
   });
 }
 
-/* ====== MODAL: criar rascunho a partir de uma ideia ====== */
+/* ===== MODAL: criar rascunho(s) a partir de uma ideia (multi-destino) ===== */
 function openCreateDraftModal(){
   const s = Data.get();
   const ideas = s.themes.filter(t=>!t.archived);
@@ -201,28 +199,44 @@ function openCreateDraftModal(){
     });
   }
 
+  // limpa checkboxes
+  modal.querySelectorAll('#destinosGroup input[type="checkbox"]').forEach(c=> c.checked=false);
+
   modal.showModal();
 
   document.getElementById('btnConfirmCreateDraft').onclick = ()=>{
     const themeId = selIdea.value;
-    const type = document.getElementById('draftTypeSelect').value;
     if(!themeId){ alert('Selecione uma ideia.'); return; }
 
-    // cria post rascunho e remove a ideia do banco
-    const postId = 'p_'+Date.now();
-    s.posts.push({ id:postId, themeId, type, date:'', status:'Rascunho', script:'', analytics:{views:0,likes:0,comments:0,clicks:0,notes:''}, archived:false });
-    s.themes = s.themes.filter(t=>t.id!==themeId); // saiu do banco de ideias
-    Data.save();
+    const checked = [...modal.querySelectorAll('#destinosGroup input[type="checkbox"]:checked')].map(c=>c.value);
+    if(!checked.length){ alert('Selecione pelo menos um destino.'); return; }
 
+    // cria 1 post para cada destino selecionado
+    let lastPostId = null;
+    checked.forEach(type=>{
+      const id = 'p_'+Date.now()+Math.floor(Math.random()*1000);
+      s.posts.push({
+        id, themeId, type,
+        date:'', status:'Rascunho', script:'',
+        analytics:{ views:0, likes:0, comments:0, clicks:0, notes:'' },
+        archived:false
+      });
+      lastPostId = id;
+    });
+
+    Data.save();
     modal.close();
-    // vai direto para o editor
-    location.href = `editor.html?postId=${postId}`;
+
+    if(checked.length === 1){
+      location.href = `editor.html?postId=${lastPostId}`;
+    }else{
+      drawDrafts();
+    }
   };
 }
 
-/* ====== Boot ====== */
+/* ===== Boot ===== */
 document.addEventListener('DOMContentLoaded', ()=>{
-  // marca menu ativo
   document.querySelectorAll('.menu a').forEach(a=>{
     a.classList.toggle('active', a.getAttribute('href') === './' || a.getAttribute('href')?.endsWith('/themes/'));
   });
@@ -230,13 +244,11 @@ document.addEventListener('DOMContentLoaded', ()=>{
   Data.load();
   drawIdeas(); drawDrafts(); drawPlan(); drawInsights();
 
-  // adicionar ideia
   document.getElementById('btnAddIdea').onclick = ()=>{
     const title = prompt('Título da ideia:'); if(!title) return;
     const s = Data.get(); s.themes.push({ id:'t_'+Date.now(), title, persona:'', objetivo:'', archived:false });
     Data.save(); drawIdeas();
   };
 
-  // criar rascunho (lista de ideias + tipo)
   document.getElementById('btnCreateDraft').onclick = openCreateDraftModal;
 });
