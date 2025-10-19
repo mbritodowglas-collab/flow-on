@@ -20,7 +20,7 @@ const Data = {
   get(){ return this._s }
 };
 
-/* utils datas locais */
+/* ===== helpers de data (LOCAL) ===== */
 const toLocalISO = (date) => {
   const y = date.getFullYear(), m = String(date.getMonth()+1).padStart(2,'0'), d = String(date.getDate()).padStart(2,'0');
   return `${y}-${m}-${d}`;
@@ -30,10 +30,9 @@ function daysBack(n=14){
   const end = new Date();
   return [...Array(n)].map((_,i)=> toLocalISO(new Date(end.getFullYear(), end.getMonth(), end.getDate()-i)) );
 }
-function daysOfMonth(date=new Date()){
-  const y = date.getFullYear(), m = date.getMonth();
-  const last = new Date(y, m+1, 0).getDate();
-  return [...Array(last)].map((_,i)=> toLocalISO(new Date(y, m, i+1)) );
+function daysOfMonth(year, monthIndex){ // monthIndex: 0..11
+  const last = new Date(year, monthIndex+1, 0).getDate();
+  return [...Array(last)].map((_,i)=> toLocalISO(new Date(year, monthIndex, i+1)) );
 }
 function clampDay(y, m, d){
   const last = new Date(y, m+1, 0).getDate();
@@ -46,6 +45,9 @@ function nextMonthDate(iso){
   const nm = m===12 ? 1 : m+1;
   const nd = clampDay(ny, nm-1, d);
   return `${ny}-${String(nm).padStart(2,'0')}-${String(nd).padStart(2,'0')}`;
+}
+function monthNamePT(monthIndex){
+  return new Date(2000, monthIndex, 1).toLocaleDateString('pt-BR', { month:'long' });
 }
 
 /* ===== Tabs ===== */
@@ -151,18 +153,49 @@ function drawDailyRecent(){
   });
 }
 
-/* ===== Monthly Log — Agenda do mês ===== */
+/* ===== Monthly Log — estado de visualização ===== */
+let viewYear  = new Date().getFullYear();
+let viewMonth = new Date().getMonth(); // 0..11
 let monthFilter = 'all'; // all | pending | done
+
+function setMonthLabelAndCounters(){
+  // Label
+  const label = `${monthNamePT(viewMonth)} de ${viewYear}`;
+  document.getElementById('monthLabel').textContent = label.charAt(0).toUpperCase() + label.slice(1);
+
+  // Counters
+  const s = Data.get();
+  const start = new Date(viewYear, viewMonth, 1);
+  const end   = new Date(viewYear, viewMonth+1, 0);
+  const items = s.journal.month.items.filter(it=>{
+    const d = parseLocal(it.date);
+    return !it.archived && d.getFullYear()===viewYear && d.getMonth()===viewMonth;
+  });
+  const total = items.length;
+  const done  = items.filter(i=>i.done).length;
+  const pend  = total - done;
+  document.getElementById('monthCounters').innerHTML = `Pendentes: <b>${pend}</b> • Concluídos: <b>${done}</b> • Total: <b>${total}</b>`;
+}
+function goPrevMonth(){
+  if(viewMonth===0){ viewMonth=11; viewYear--; } else { viewMonth--; }
+  setMonthLabelAndCounters();
+  drawMonthList();
+}
+function goNextMonth(){
+  if(viewMonth===11){ viewMonth=0; viewYear++; } else { viewMonth++; }
+  setMonthLabelAndCounters();
+  drawMonthList();
+}
 
 function setMonthFilter(f){
   monthFilter = f;
-  // atualizar estilo ativo
   document.querySelectorAll('#monthFilters .btn').forEach(b=>{
     b.classList.toggle('active', b.dataset.filter===f);
   });
   drawMonthList();
 }
 
+/* ===== Monthly: CRUD ===== */
 function addMonthItem(){
   const s = Data.get();
   const title = document.getElementById('mTitle').value.trim();
@@ -179,39 +212,51 @@ function addMonthItem(){
   document.getElementById('mTitle').value='';
   document.getElementById('mDate').value='';
   document.getElementById('mNotes').value='';
+  setMonthLabelAndCounters();
   drawMonthList();
 }
 
 function moveAllNextMonth(){
   const s = Data.get();
-  const month = new Date().getMonth();
-  const year  = new Date().getFullYear();
-  // só pendentes do mês atual
+  // pendentes do mês visualizado
+  let moved = 0;
   s.journal.month.items.forEach(it=>{
     const d = parseLocal(it.date);
-    if(!it.done && d.getMonth()===month && d.getFullYear()===year){
+    if(!it.done && d.getFullYear()===viewYear && d.getMonth()===viewMonth){
       it.date = nextMonthDate(it.date);
+      moved++;
     }
   });
   Data.save();
+  setMonthLabelAndCounters();
   drawMonthList();
-  alert('Pendentes movidos para o próximo mês.');
+
+  const banner = document.getElementById('monthBanner');
+  if(moved>0){
+    banner.style.display='block';
+    banner.innerHTML = `✅ <b>${moved}</b> item(ns) movidos para <b>${monthNamePT((viewMonth+1)%12)}${viewMonth===11?' de '+(viewYear+1):''}</b>.
+      <button id="jumpNext" class="btn small" style="margin-left:8px">Ir para próximo mês</button>`;
+    document.getElementById('jumpNext').onclick = ()=>{ goNextMonth(); banner.style.display='none'; };
+  }else{
+    banner.style.display='block';
+    banner.textContent = 'Nenhum item pendente para mover.';
+    setTimeout(()=> banner.style.display='none', 2000);
+  }
 }
 
 function drawMonthList(){
   const s = Data.get();
   const box = document.getElementById('monthList'); box.innerHTML='';
-  const currentMonthDays = daysOfMonth(new Date());
+  const currentMonthDays = daysOfMonth(viewYear, viewMonth);
 
   let any = false;
   currentMonthDays.forEach(d=>{
     let items = s.journal.month.items.filter(it=> !it.archived && it.date===d);
     if(monthFilter==='pending') items = items.filter(it=> !it.done);
     if(monthFilter==='done')     items = items.filter(it=>  it.done);
-
     if(!items.length) return;
-    any = true;
 
+    any = true;
     const wrap = document.createElement('div'); wrap.className='list-day';
     wrap.innerHTML = `
       <div class="list-day-head">
@@ -233,10 +278,10 @@ function drawMonthList(){
         </span>`;
 
       row.querySelector('[data-done]').onclick = ()=>{
-        it.done = !it.done; Data.save(); drawMonthList();
+        it.done = !it.done; Data.save(); setMonthLabelAndCounters(); drawMonthList();
       };
       row.querySelector('[data-move]').onclick = ()=>{
-        it.date = nextMonthDate(it.date); Data.save(); drawMonthList();
+        it.date = nextMonthDate(it.date); Data.save(); setMonthLabelAndCounters(); drawMonthList();
       };
       row.querySelector('[data-edit]').onclick = ()=>{
         const nt = prompt('Título', it.title||'') ?? it.title;
@@ -245,12 +290,12 @@ function drawMonthList(){
         if(nd===null) return;
         const nn = prompt('Notas', it.notes||'') ?? it.notes;
         it.title = String(nt).trim(); it.date = String(nd); it.notes = String(nn);
-        Data.save(); drawMonthList();
+        Data.save(); setMonthLabelAndCounters(); drawMonthList();
       };
       row.querySelector('[data-del]').onclick = ()=>{
         if(confirm('Excluir item do mês?')){
           s.journal.month.items = s.journal.month.items.filter(x=>x.id!==it.id);
-          Data.save(); drawMonthList();
+          Data.save(); setMonthLabelAndCounters(); drawMonthList();
         }
       };
 
@@ -297,10 +342,13 @@ document.addEventListener('DOMContentLoaded', ()=>{
   // Monthly
   document.getElementById('btnAddMonthItem').onclick = addMonthItem;
   document.getElementById('btnMoveAllNextMonth').onclick = moveAllNextMonth;
+  document.getElementById('btnPrevMonth').onclick = goPrevMonth;
+  document.getElementById('btnNextMonth').onclick = goNextMonth;
   document.querySelectorAll('#monthFilters .btn').forEach(b=>{
     b.onclick = ()=> setMonthFilter(b.dataset.filter);
   });
-  setMonthFilter('all'); // inicia e desenha lista
+  setMonthLabelAndCounters();
+  setMonthFilter('all'); // também desenha a lista
 
   // Trimestral
   document.getElementById('btnSaveTri').onclick = saveTri;
