@@ -22,7 +22,7 @@
     .fo-kpi strong{font-size:1.3rem}
     /* 21 dias */
     .fo-dots{display:grid;grid-template-columns:repeat(21,10px);gap:6px;margin-top:8px}
-    .fo-dot{width:10px;height:10px;border-radius:50%;border:1px solid var(--border);opacity:.6}
+    .fo-dot{width:10px;height:10px;border-radius:50%;border:1px solid var(--border);background:rgba(255,255,255,0.05);opacity:.8}
     .fo-dot.on{background:linear-gradient(180deg,#50fa7b,#2ecc71);border-color:transparent;opacity:1}
     .fo-habit-row{margin:10px 0}
     .fo-habit-name{font-weight:600;margin-bottom:6px}
@@ -34,6 +34,7 @@
     .h-dots{display:flex;align-items:center;gap:8px}
     .ring-dot{width:12px;height:12px;border:2px solid #2ecc71;border-radius:50%}
     .ring-dot.done{background:linear-gradient(180deg,#50fa7b,#2ecc71);border-color:transparent}
+    .ring-dot.miss{background:linear-gradient(180deg,#ff8a8a,#ff6b6b);border-color:transparent}
     .h-pct{font-size:.85rem;opacity:.7}
     .list-day{padding:10px;border:1px solid var(--border);border-radius:12px;margin:8px 0}
     .list-day-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
@@ -92,15 +93,12 @@
       .fo-item{min-width:66px;padding:8px 8px}
       .fo-item .fo-label{font-size:.85rem}
     }
-    /* Garantia: some com qualquer marca antiga em canto */
     #flowon-badge,.fo-watermark,.flowon-mark{display:none!important}
-    /* Container da página (mantém teu grid) */
     .container{width:min(980px,94%);margin:18px auto 80px}
   </style>
 </head>
 <body>
 
-  <!-- ======= TOPBAR + NAV Centralizados ======= -->
   <header class="fo-topbar">
     <a class="fo-brand" href="./">
       <img src="assets/img/logo.svg" alt="Flow On logo" class="fo-logo" />
@@ -126,10 +124,8 @@
       <span class="fo-label">Configurações</span>
     </a>
   </nav>
-  <!-- ========================================== -->
 
   <main class="container">
-    <!-- Progresso Geral -->
     <section class="fo-card" id="progress-card">
       <h2 class="fo-title">Progresso Geral</h2>
       <div class="fo-kpis">
@@ -139,7 +135,6 @@
       </div>
     </section>
 
-    <!-- Visão do Trimestre -->
     <section class="fo-card" id="quarter-card">
       <h2 class="fo-title">Visão do Trimestre <span class="fo-muted" id="quarter-label"></span></h2>
       <div class="fo-muted" id="quarter-notes" style="white-space:pre-line">Sem anotações do trimestre ainda.</div>
@@ -148,7 +143,6 @@
       </div>
     </section>
 
-    <!-- Hábitos -->
     <section class="card" id="habits-card">
       <h2>Hábitos da Semana
         <button id="btn-habits-21" class="btn small" style="margin-left:8px">📈 21 dias</button>
@@ -157,20 +151,14 @@
       <div id="habits-21-panel" style="display:none"></div>
     </section>
 
-    <!-- Agenda de Conteúdo -->
     <section class="card">
       <h2>Agenda de Conteúdo</h2>
-      <div id="content-summary">
-        <p>Carregando publicações...</p>
-      </div>
+      <div id="content-summary"><p>Carregando publicações...</p></div>
     </section>
 
-    <!-- Resumo do Journal -->
     <section class="card">
       <h2>Resumo do Journal</h2>
-      <div id="journal-summary">
-        <p>Carregando registros...</p>
-      </div>
+      <div id="journal-summary"><p>Carregando registros...</p></div>
     </section>
   </main>
 
@@ -178,264 +166,66 @@
     <p>Flow On © 2025 — Planeje. Execute. Evolua.</p>
   </footer>
 
-  <!-- ============ JS EMBUTIDO (sincronizado com a página Hábitos) ============ -->
   <script>
   document.addEventListener('DOMContentLoaded', function(){
-    /* ===== Carrega estados (v2 e legado) ===== */
     const KEY_V2='flowon.v2';
     const KEY_OLD='flowon';
     let S={}, SOLD={};
-    try{ S    = JSON.parse(localStorage.getItem(KEY_V2)||'{}'); }catch(e){ S={}; }
-    try{ SOLD = JSON.parse(localStorage.getItem(KEY_OLD)||'{}'); }catch(e){ SOLD={}; }
+    try{ S=JSON.parse(localStorage.getItem(KEY_V2)||'{}'); }catch(e){S={};}
+    try{ SOLD=JSON.parse(localStorage.getItem(KEY_OLD)||'{}'); }catch(e){SOLD={};}
 
-    // ------- Helpers de data (local) -------
-    const toISO = d => d.toISOString().slice(0,10);
-    const todayISO = () => { const d=new Date(); d.setHours(0,0,0,0); return toISO(d); };
-    const addDays = (iso,n)=>{ const d=new Date(iso+'T00:00:00'); d.setDate(d.getDate()+n); return toISO(d); };
-    const parseLocal = iso => { const [y,m,d]=(iso||'').split('-').map(Number); return new Date(y,(m||1)-1,d||1); };
-    function mondayOfWeekISO(iso) {
-      const d = parseLocal(iso);
-      const off = (d.getDay()+6)%7;
-      d.setDate(d.getDate()-off);
-      return toISO(d);
-    }
-    function weekRangeFromISO(iso){
-      const mon = mondayOfWeekISO(iso);
-      return [...Array(7)].map((_,i)=> addDays(mon, i));
-    }
-    function weekKeyOfISO(iso){
-      const d=parseLocal(iso);
-      const onejan=new Date(d.getFullYear(),0,1);
-      const day=Math.floor((d-onejan)/86400000)+1;
-      const wk=Math.ceil((day+((onejan.getDay()+6)%7))/7);
-      return `${d.getFullYear()}-W${String(wk).padStart(2,'0')}`;
-    }
-    function dayIndexOfISO(iso){ const d=parseLocal(iso); return (d.getDay()+6)%7; }
+    const toISO=d=>d.toISOString().slice(0,10);
+    const todayISO=()=>{const d=new Date();d.setHours(0,0,0,0);return toISO(d);};
+    const addDays=(iso,n)=>{const d=new Date(iso+'T00:00:00');d.setDate(d.getDate()+n);return toISO(d);};
+    const parseLocal=iso=>{const [y,m,d]=(iso||'').split('-').map(Number);return new Date(y,(m||1)-1,d||1);};
+    const mondayOfWeekISO=iso=>{const d=parseLocal(iso);const off=(d.getDay()+6)%7;d.setDate(d.getDate()-off);return toISO(d);};
+    const weekRangeFromISO=iso=>{const mon=mondayOfWeekISO(iso);return[...Array(7)].map((_,i)=>addDays(mon,i));};
 
-    // ------- Fonte única de hábitos -------
-    function getHabits(){
-      if (Array.isArray(SOLD?.journal?.habits?.items) && SOLD.journal.habits.items.length) return SOLD.journal.habits.items;
-      if (Array.isArray(SOLD?.habits) && SOLD.habits.length) return SOLD.habits;
-      if (Array.isArray(S?.journal?.habits?.items) && S.journal.habits.items.length) return S.journal.habits.items;
-      if (Array.isArray(S?.habits) && S.habits.length) return S.habits;
-      return [];
-    }
-
-    // === Leitura unificada: marcação por semana OU por data ===
-    function isChecked(habit, iso){
-      // Semana: checks["YYYY-Www"][7]
-      if (habit.checks && typeof habit.checks === 'object'){
-        const wk  = weekKeyOfISO(iso);
-        const idx = dayIndexOfISO(iso);
-        const arr = habit.checks[wk];
-        if (Array.isArray(arr) && arr.length > idx) return !!arr[idx];
-      }
-      // Data: aceita várias chaves comuns
-      const byDateKeys = ['byDate','days','dates','checksByDate'];
-      for (const k of byDateKeys){
-        if (habit[k] && typeof habit[k] === 'object' && (iso in habit[k])) return !!habit[k][iso];
-      }
-      return false;
-    }
-
-    // ------- Progresso Geral -------
-    (function renderProgress(){
-      const habits = getHabits();
-      const weekDays = weekRangeFromISO(todayISO());
-      let done=0,total=0;
-
-      habits.forEach(h=>{
-        weekDays.forEach(iso=>{
-          total += 1;
-          if (isChecked(h, iso)) done += 1;
-        });
-      });
-      const habitsPct = total ? Math.round(done/total*100)+'%' : '—';
-
-      // dailies 7 dias (v2 array OU legado byDate)
-      let d7 = 0;
-      const past7 = [...Array(7)].map((_,i)=> addDays(todayISO(), -i));
-      const dailyArr    = S.journal?.daily;
-      const dailyByDate = SOLD?.journal?.daily?.byDate;
-      if (Array.isArray(dailyArr)) {
-        d7 = dailyArr.filter(r=> r?.date && past7.includes(r.date) && (r.focus||r.notes||r.mits||r.gratitude)).length;
-      } else if (dailyByDate && typeof dailyByDate==='object') {
-        d7 = past7.filter(d=> {
-          const v = dailyByDate[d];
-          return v && (v.focus||v.notes||v.mits||v.gratitude);
-        }).length;
-      }
-
-      // conteúdos próximos 7 dias (v2)
-      let posts7 = 0;
-      for(let i=0;i<7;i++){
-        const d=addDays(todayISO(), i);
-        const arr=(S.posts||[]).filter(p=>!p.archived && p.status!=='Rascunho' && p.date===d);
-        posts7 += arr.length;
-      }
-
-      document.getElementById('kpi-habits').textContent  = habitsPct;
-      document.getElementById('kpi-dailies').textContent = String(d7);
-      document.getElementById('kpi-posts').textContent   = String(posts7);
-    })();
-
-    // ------- Visão do Trimestre -------
-    (function renderQuarter(){
-      const d = parseLocal(todayISO());
-      const y = d.getFullYear();
-      const q = Math.floor(d.getMonth()/3)+1;
-      const key = `${y}-T${q}`;
-      const label = `T${q} de ${y}`;
-      document.getElementById('quarter-label').textContent = `(${label})`;
-
-      let notes = S.journal?.tri?.byQuarter?.[key] || '';
-      if(!notes){
-        const J = SOLD.journal || {};
-        const roots = [ J.tri, J.quarterly, J.trimestral, J ];
-        for(const r of roots){
-          if(!r) continue;
-          if(r.byQuarter && r.byQuarter[key]) { notes = r.byQuarter[key]; break; }
-          if(r[key]) { notes = r[key]; break; }
-        }
-      }
-      document.getElementById('quarter-notes').textContent = notes || 'Sem anotações do trimestre ainda.';
-    })();
-
-    // ------- Hábitos (semana) -------
-    (function renderHabitsSummary(){
-      const el = document.getElementById('habits-summary');
-      const habits = getHabits();
-      const weekDays = weekRangeFromISO(todayISO());
-      let html='';
-
-      habits.forEach(h=>{
-        const dots = weekDays
-          .map(iso => `<span class="ring-dot ${isChecked(h, iso) ? 'done' : ''}"></span>`)
-          .join('');
-        const pct = Math.round((weekDays.filter(iso => isChecked(h, iso)).length/7)*100)||0;
-        html += `<div class="h-row">
-          <div class="h-name">${h.name||h.title||'Hábito'}</div>
-          <div class="h-dots">${dots}<div class="h-pct">${pct}%</div></div>
-        </div>`;
-      });
-
-      if(!habits.length) html = `<div class="muted">Sem hábitos cadastrados. Edite em <b>Journal → Hábitos</b>.</div>`;
-      el.innerHTML = html + `<div class="muted" style="margin-top:6px">* visão geral — edite em Journal → Hábitos</div>`;
-    })();
-
-    // ------- 21 dias -------
-    (function setupHabits21(){
-      const btn = document.getElementById('btn-habits-21');
-      const panel = document.getElementById('habits-21-panel');
-      if(!btn || !panel) return;
-
-      const habits = getHabits();
-      if(!habits.length){ btn.style.display='none'; return; }
-
-      function build(){
-        const today = todayISO();
-        const days = [...Array(21)].map((_,i)=> addDays(today, -(20-i))); // últimos 21
-        const habitsNow = getHabits();
-        panel.innerHTML='';
-        habitsNow.forEach(h=>{
-          const row = document.createElement('div'); row.className='fo-habit-row';
-          row.innerHTML = `<div class="fo-habit-name">${h.name||h.title||'Hábito'}</div>`;
-          const grid = document.createElement('div'); grid.className='fo-dots';
-          days.forEach(iso=>{
-            const dot=document.createElement('div');
-            dot.className='fo-dot' + (isChecked(h, iso) ? ' on' : '');
-            dot.title = iso;
-            grid.appendChild(dot);
-          });
-          row.appendChild(grid); panel.appendChild(row);
-        });
-      }
-
-      btn.addEventListener('click', ()=>{
-        const open = panel.style.display==='block';
-        if(open){ panel.style.display='none'; btn.textContent='📈 21 dias'; }
-        else { build(); panel.style.display='block'; btn.textContent='Ocultar 21 dias'; }
-      });
-    })();
-
-    // ------- Agenda de Conteúdo -------
-    (function renderContentSummary(){
-      const el = document.getElementById('content-summary');
-      const dates = weekRangeFromISO(todayISO());
-      const today = todayISO();
-
-      const statusBadge = (dateStr, status)=>{
-        if(status==='Agendado'){
-          if(dateStr < today) return `<span class="badge" style="background:#321; border-color:#633; color:#f8d7da">Atrasado</span>`;
-          if(dateStr === today) return `<span class="badge" style="background:#332b00; border-color:#806b00; color:#ffec99">Pendente</span>`;
-          return `<span class="badge" style="background:#102915; border-color:#1f6f34; color:#b7ffd1">Agendado</span>`;
-        }
-        if(status==='Publicado') return `<span class="badge" style="background:#0e2a3a; border-color:#1f5168; color:#a8e1ff">Publicado</span>`;
-        return '';
+    const getHabitsData=()=>{
+      const H=SOLD?.journal?.habits||{};return{
+        items:Array.isArray(H.items)?H.items:[],
+        marks:(H.marks&&typeof H.marks==='object')?H.marks:{}
       };
+    };
+    const getMarkFor=(marks,iso,id)=>{
+      const m=marks[iso];if(!m)return undefined;
+      if(Array.isArray(m))return m.includes(id)?1:0;
+      if(typeof m==='object')return(m[id]===1)?1:(m[id]===0?0:undefined);
+    };
 
-      let html = '';
-      dates.forEach(d=>{
-        const items = (S.posts||[]).filter(p=> !p.archived && p.status!=='Rascunho' && p.date === d);
-        const list = items.length
-          ? items.map(p=>{
-              const theme = (S.themes||[]).find(t=>t.id===p.themeId);
-              const labelMap = {yt_long:'YouTube',short:'Reels/TikTok',carousel:'Carrossel',static:'Imagem',blog:'Blog'};
-              const label = labelMap[p.type] || p.type || 'Post';
-              return `<div class="small badge" style="display:flex; align-items:center; gap:6px; margin:2px 4px 0 0">
-                <span>${theme?.title||'—'} • ${label}</span>${statusBadge(p.date, p.status)}
-              </div>`;
-            }).join('')
-          : `<span class="muted">Sem itens</span>`;
-
-        const display = parseLocal(d).toLocaleDateString('pt-BR',{weekday:'short', day:'2-digit'});
-        html += `<div class="list-day"><div class="list-day-head">
-            <span>${display}</span><span class="muted">semana</span></div><div>${list}</div></div>`;
+    (function renderHabitsSummary(){
+      const el=document.getElementById('habits-summary');
+      if(!el)return;
+      const{items,marks}=getHabitsData();
+      const weekDays=weekRangeFromISO(todayISO());
+      const today=todayISO();
+      if(!items.length){el.innerHTML=`<div class="muted">Sem hábitos cadastrados. Edite em <b>Journal → Hábitos</b>.</div>`;return;}
+      let html='';
+      items.forEach(h=>{
+        const id=h.id||h.key||h.title;
+        const dots=weekDays.map(iso=>{
+          const v=getMarkFor(marks,iso,id);
+          let cls='ring-dot';
+          if(v===1)cls+=' done';
+          else if(v===0&&iso<today)cls+=' miss';
+          return `<span class="${cls}" title="${iso}"></span>`;
+        }).join('');
+        const ones=weekDays.reduce((a,iso)=>a+(getMarkFor(marks,iso,id)===1?1:0),0);
+        const pct=Math.round((ones/7)*100);
+        html+=`<div class="h-row"><div class="h-name">${h.title||h.name||'Hábito'}</div><div class="h-dots">${dots}<div class="h-pct">${pct}%</div></div></div>`;
       });
-      el.innerHTML = html;
+      el.innerHTML=html+`<div class="muted" style="margin-top:6px">* visão geral — edite em Journal → Hábitos</div>`;
     })();
-
-    // ------- Resumo do Journal (Monthly) -------
-    (function renderJournalSummary(){
-      const el = document.getElementById('journal-summary');
-      const dates = weekRangeFromISO(todayISO());
-      const items = (S.journal?.month?.items || []).filter(it=> !it.archived);
-
-      let html = '';
-      dates.forEach(d=>{
-        const dayItems = items.filter(it=> it.date === d);
-        const list = dayItems.length
-          ? dayItems.map(it=>{
-              const badge = it.done
-                ? `<span class="badge" style="background:#0e2a3a; border-color:#1f5168; color:#a8e1ff">Concluído</span>`
-                : `<span class="badge" style="background:#332b00; border-color:#806b00; color:#ffec99">Pendente</span>`;
-              return `<div class="small badge" style="display:flex; align-items:center; gap:6px; margin:2px 4px 0 0">
-                  <span>${it.title}</span>${badge}
-                </div>`;
-            }).join('')
-          : `<span class="muted">Sem itens</span>`;
-
-        const display = parseLocal(d).toLocaleDateString('pt-BR',{weekday:'short', day:'2-digit'});
-        html += `<div class="list-day j-card">
-            <div class="list-day-head"><span class="small" style="opacity:.8">${display}</span>
-            <span class="muted">agenda</span></div>
-            <div>${list}</div>
-          </div>`;
-      });
-      el.innerHTML = html;
-    })();
-
   });
   </script>
 
-  <!-- Registro do Service Worker (neutro; não faz cache) -->
   <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./service-worker.js', { scope: './' })
-          .catch(err => console.warn('[PWA] SW error:', err));
-      });
-    }
+  if('serviceWorker'in navigator){
+    window.addEventListener('load',()=>{
+      navigator.serviceWorker.register('./service-worker.js',{scope:'./'})
+      .catch(err=>console.warn('[PWA] SW error:',err));
+    });
+  }
   </script>
 </body>
 </html>
