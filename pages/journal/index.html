@@ -63,7 +63,14 @@
 
     <!-- MONTHLY LOG (AGENDA DO MÊS) -->
     <section class="card tab-pane" id="tab-monthly">
-      <h2>Monthly Log</h2>
+      <div class="card-head" style="align-items:flex-end; gap:8px">
+        <h2>Monthly Log</h2>
+        <div id="monthFilters" class="btn-group">
+          <button class="btn small" data-filter="all">Todos</button>
+          <button class="btn small" data-filter="pending">Pendentes</button>
+          <button class="btn small" data-filter="done">Concluídos</button>
+        </div>
+      </div>
       <div class="muted small" style="margin-bottom:8px">
         Programe as <b>atividades do mês</b>. Elas aparecem na Home como <b>agenda semanal</b>.
       </div>
@@ -81,8 +88,9 @@
         </div>
         <label>Observações</label>
         <textarea id="mNotes" rows="4" placeholder="Contexto, checklist, links…"></textarea>
-        <div style="margin-top:8px">
+        <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap">
           <button id="btnAddMonthItem" class="btn">+ Adicionar</button>
+          <button id="btnMoveAllNextMonth" class="btn">Mover pendentes → próximo mês</button>
         </div>
       </div>
 
@@ -103,6 +111,6 @@
     <p>Flow On © 2025 — Planeje. Execute. Evolua.</p>
   </footer>
 
-  <script src="../../assets/js/journal.js?v=2"></script>
+  <script src="../../assets/js/journal.js?v=3"></script>
 </body>
 </html>
