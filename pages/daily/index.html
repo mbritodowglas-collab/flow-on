@@ -6,6 +6,11 @@
   <title>Flow On — Daily Log</title>
   <link rel="stylesheet" href="../../assets/css/style.css" />
   <link rel="icon" href="../../assets/img/favicon-32.png" />
+  <style>
+    /* pequenos reforços visuais */
+    #dailyRecent .item, #dailyMonthList .item { margin-top:8px; }
+    .btn.danger { border-color:#ff6b6b; }
+  </style>
 </head>
 <body>
 <header class="navbar">
@@ -42,7 +47,6 @@
       <textarea id="dailyNotes" rows="6" placeholder="Anotações do dia"></textarea>
 
       <div style="margin-top:8px; display:flex; gap:10px; flex-wrap:wrap">
-        <!-- type="button" evita qualquer submissão implícita -->
         <button id="btnSaveDaily" type="button" class="btn">💾 Salvar Daily</button>
         <button id="btnDeleteDaily" type="button" class="btn danger">🗑️ Excluir dia</button>
       </div>
@@ -68,8 +72,203 @@
   <p>Flow On © 2025 — Planeje. Execute. Evolua.</p>
 </footer>
 
-<!-- Core e lógica (garanta v=2 para forçar atualização do cache) -->
-<script src="../../assets/js/core.js?v=1"></script>
-<script src="../../assets/js/daily.js?v=2"></script>
+<!-- =============== JS EMBUTIDO (autônomo) =============== -->
+<script>
+/* Storage simples */
+const STORE_KEY = 'flowon';
+const Data = {
+  _s: null,
+  load(){ try{ this._s = JSON.parse(localStorage.getItem(STORE_KEY)||'{}'); }catch(e){ this._s = {}; } },
+  save(){ localStorage.setItem(STORE_KEY, JSON.stringify(this._s||{})); },
+  get(){ if(!this._s) this.load(); return this._s; }
+};
+function J(){ const s = Data.get(); s.journal ||= {}; s.journal.daily ||= { byDate:{} }; return s; }
+
+/* Helpers */
+const toISO = d => d.toISOString().slice(0,10);
+function todayISO(){ const d=new Date(); d.setHours(0,0,0,0); return toISO(d); }
+function addDaysISO(iso,n){ const d=new Date(iso+'T00:00:00'); d.setDate(d.getDate()+n); return toISO(d); }
+function toBR(iso){ return new Date(iso+'T00:00:00').toLocaleDateString('pt-BR'); }
+function monthKey(iso){ const d=new Date(iso+'T00:00:00'); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; }
+
+/* Populate datas (últimos 30 + existentes) */
+function populateDateOptions(){
+  const sel = document.getElementById('dailyDate'); if(!sel) return;
+  const s = J();
+  const existing = Object.keys(s.journal.daily.byDate||{});
+  const base = addDaysISO(todayISO(), -29);
+  const set = new Set();
+  for(let i=0;i<30;i++){ set.add(addDaysISO(base,i)); }
+  existing.forEach(d=>set.add(d));
+  const arr = Array.from(set).sort().reverse();
+  sel.innerHTML = arr.map(d=>`<option value="${d}">${toBR(d)}</option>`).join('');
+  sel.value = arr.includes(todayISO()) ? todayISO() : arr[0];
+}
+
+/* Form utils */
+function readForm(){
+  return {
+    date: document.getElementById('dailyDate').value || todayISO(),
+    focus: (document.getElementById('dailyFocus').value||'').trim(),
+    mits: (document.getElementById('dailyMITs').value||'').trim(),
+    gratitude: (document.getElementById('dailyGrat').value||'').trim(),
+    mood: Number(document.getElementById('dailyMood').value||0) || null,
+    notes: (document.getElementById('dailyNotes').value||'').trim(),
+    ts: Date.now()
+  };
+}
+function fillForm(dateISO, rec){
+  document.getElementById('dailyDate').value = dateISO;
+  document.getElementById('dailyFocus').value = rec?.focus || '';
+  document.getElementById('dailyMITs').value = rec?.mits || '';
+  document.getElementById('dailyGrat').value = rec?.gratitude || '';
+  document.getElementById('dailyMood').value = rec?.mood ?? '';
+  document.getElementById('dailyNotes').value = rec?.notes || '';
+}
+function clearForm(){
+  document.getElementById('dailyFocus').value = '';
+  document.getElementById('dailyMITs').value = '';
+  document.getElementById('dailyGrat').value = '';
+  document.getElementById('dailyMood').value = '';
+  document.getElementById('dailyNotes').value = '';
+}
+
+/* CRUD */
+function saveDaily(){
+  const s = J(); const r = readForm();
+  s.journal.daily.byDate[r.date] = {
+    focus:r.focus, mits:r.mits, gratitude:r.gratitude, mood:r.mood, notes:r.notes, ts:r.ts
+  };
+  Data.save();
+  populateDateOptions(); // caso seja novo
+  renderDailyRecent();
+  renderDailyMonth();
+  alert('Daily salvo!');
+}
+function deleteDaily(dateISO){
+  const s = J();
+  if(!s.journal.daily.byDate[dateISO]) return;
+  delete s.journal.daily.byDate[dateISO];
+  Data.save();
+  if(document.getElementById('dailyDate').value === dateISO){ clearForm(); }
+  populateDateOptions();
+  document.getElementById('dailyDate').value = todayISO();
+  renderDailyRecent();
+  renderDailyMonth();
+}
+
+/* Render: últimos 3 */
+function renderDailyRecent(){
+  const wrap = document.getElementById('dailyRecent'); if(!wrap) return;
+  const s = J();
+  const entries = Object.entries(s.journal.daily.byDate)
+    .sort((a,b)=> b[0].localeCompare(a[0]))
+    .slice(0,3);
+  if(entries.length===0){ wrap.innerHTML = `<div class="empty">Sem registros recentes.</div>`; return; }
+
+  wrap.innerHTML = '';
+  entries.forEach(([date, rec])=>{
+    const el = document.createElement('div');
+    el.className = 'item';
+    el.innerHTML = `
+      <div>
+        <strong>${toBR(date)}</strong>
+        <div class="muted">Humor: ${rec.mood ?? '—'}</div>
+        <div style="margin-top:6px">
+          <div>Foco: ${rec.focus || '—'}</div>
+          <div>Gratidão: ${rec.gratitude || '—'}</div>
+          ${rec.mits ? `<div>MITs: ${rec.mits}</div>` : ''}
+        </div>
+      </div>
+      <div class="flex">
+        <button class="btn small" data-act="edit" data-date="${date}">Editar</button>
+        <button class="btn small danger" data-act="del" data-date="${date}">Excluir</button>
+      </div>
+    `;
+    wrap.appendChild(el);
+  });
+  bindCardActions(wrap);
+}
+
+/* Render: mês atual */
+function renderDailyMonth(){
+  const wrap = document.getElementById('dailyMonthList'); if(!wrap) return;
+  const s = J(); const mk = monthKey(todayISO());
+  const entries = Object.entries(s.journal.daily.byDate)
+    .filter(([d])=> monthKey(d)===mk)
+    .sort((a,b)=> b[0].localeCompare(a[0]));
+  if(entries.length===0){ wrap.innerHTML = `<div class="empty">Sem registros neste mês.</div>`; return; }
+
+  wrap.innerHTML = '';
+  entries.forEach(([date, rec])=>{
+    const el = document.createElement('div');
+    el.className = 'item';
+    el.innerHTML = `
+      <div>
+        <strong>${toBR(date)}</strong>
+        <div class="muted">Humor: ${rec.mood ?? '—'}</div>
+        <div style="margin-top:6px">
+          <div>Foco: ${rec.focus || '—'}</div>
+          <div>Gratidão: ${rec.gratitude || '—'}</div>
+          ${rec.mits ? `<div>MITs: ${rec.mits}</div>` : ''}
+        </div>
+      </div>
+      <div class="flex">
+        <button class="btn small" data-act="edit" data-date="${date}">Editar</button>
+        <button class="btn small danger" data-act="del" data-date="${date}">Excluir</button>
+      </div>
+    `;
+    wrap.appendChild(el);
+  });
+  bindCardActions(wrap);
+}
+
+/* Liga botões dos cartões */
+function bindCardActions(scope){
+  scope.querySelectorAll('[data-act="edit"]').forEach(b=>{
+    b.onclick = ()=>{ const d=b.dataset.date; const s=J(); fillForm(d, s.journal.daily.byDate[d]||null); window.scrollTo({top:0,behavior:'smooth'}); };
+  });
+  scope.querySelectorAll('[data-act="del"]').forEach(b=>{
+    b.onclick = ()=>{ const d=b.dataset.date; if(confirm('Excluir este registro diário?')) deleteDaily(d); };
+  });
+}
+
+/* Toggle ver mês */
+function bindToggleMonth(){
+  const btn = document.getElementById('btnToggleDailyMonth');
+  const box = document.getElementById('dailyMonth');
+  if(!btn || !box) return;
+  btn.onclick = ()=>{
+    const open = box.style.display !== 'none';
+    box.style.display = open ? 'none' : 'block';
+    btn.textContent = open ? 'Ver todos do mês' : 'Ocultar';
+  };
+}
+
+/* Bind dos botões principais */
+function bindTopButtons(){
+  document.getElementById('btnSaveDaily').onclick = saveDaily;
+  document.getElementById('btnDeleteDaily').onclick = ()=>{
+    const d = document.getElementById('dailyDate').value;
+    if(confirm('Excluir este registro diário?')) deleteDaily(d);
+  };
+  document.getElementById('dailyDate').onchange = ()=>{
+    const d = document.getElementById('dailyDate').value;
+    const s = J(); fillForm(d, s.journal.daily.byDate[d] || null);
+  };
+}
+
+/* Boot */
+document.addEventListener('DOMContentLoaded', ()=>{
+  Data.load();
+  populateDateOptions();
+  const s = J(); if(s.journal.daily.byDate[todayISO()]) fillForm(todayISO(), s.journal.daily.byDate[todayISO()]);
+  bindTopButtons();
+  bindToggleMonth();
+  renderDailyRecent();
+  renderDailyMonth();
+});
+</script>
+<!-- ============= FIM JS EMBUTIDO ============= -->
 </body>
 </html>
