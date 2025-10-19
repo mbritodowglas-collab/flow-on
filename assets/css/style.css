@@ -85,3 +85,53 @@ body{
 /* UTIL */
 .muted{font-size:11px; opacity:.65}
 .small{font-size:12px}
+
+/* ====== Ajustes de layout (mobile first) ====== */
+.form label{
+  display:block;
+  font-size: 0.95rem;
+  margin: 10px 0 6px;
+}
+.form input[type="text"],
+.form input[type="number"],
+.form input[type="date"],
+.form select,
+.form textarea{
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.btn-group{
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.btn.small{ padding: 6px 10px; font-size: .9rem; }
+
+/* Grades responsivas */
+.grid-2{
+  display:grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+@media (min-width: 720px){
+  .grid-2{ grid-template-columns: 1fr 1fr; }
+}
+
+/* Cards/listas com mais respiro */
+.card{ padding: 14px; }
+.list-day{ padding: 12px; border: 1px solid var(--border); border-radius:12px; margin-top:10px; }
+.list-day-head{ display:flex; justify-content:space-between; align-items:center; gap:8px; }
+
+/* Títulos + botões */
+h3{ margin: 16px 0 8px; }
+#dailyMonth{ margin-top: 10px; }
+
+/* Espaço entre blocos do Journal */
+#tab-daily .form{ margin-bottom: 10px; }
+#tab-monthly .form{ margin-top: 8px; }
+
+/* Corrige estouros horizontais de botões/controles */
+#tab-monthly .card-head{ gap: 10px; flex-wrap: wrap; }
+
