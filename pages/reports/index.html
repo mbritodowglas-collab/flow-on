@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Flow On — Relatórios</title>
+  <link rel="stylesheet" href="../../assets/css/style.css" />
+  <link rel="icon" href="../../assets/img/favicon-32.png" />
+</head>
+<body>
+  <header class="navbar">
+    <div class="nav-inner">
+      <div class="logo">
+        <img src="../../assets/img/logo.svg" alt="Flow On logo" />
+        <span>Flow On</span>
+      </div>
+      <nav class="menu">
+        <a href="../../index.html">🏠 Home</a>
+        <a href="../journal/">📓 Journal</a>
+        <a href="../themes/">🎬 Temas</a>
+        <a href="../settings/">⚙️ Configurações</a>
+        <a href="./" class="active">📊 Relatórios</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2>Relatórios</h2>
+
+      <div class="tabs" style="margin-bottom:8px">
+        <button class="tab active" data-tab="mensal">Mensal</button>
+        <button class="tab" data-tab="trimestral">Trimestral</button>
+      </div>
+
+      <!-- MENSAL -->
+      <div class="tab-pane active" id="tab-mensal">
+        <div class="form grid-2" style="max-width:720px">
+          <div>
+            <label>Ano</label>
+            <select id="rYear"></select>
+          </div>
+          <div>
+            <label>Mês</label>
+            <select id="rMonth">
+              <option value="0">Jan</option><option value="1">Fev</option><option value="2">Mar</option>
+              <option value="3">Abr</option><option value="4">Mai</option><option value="5">Jun</option>
+              <option value="6">Jul</option><option value="7">Ago</option><option value="8">Set</option>
+              <option value="9">Out</option><option value="10">Nov</option><option value="11">Dez</option>
+            </select>
+          </div>
+        </div>
+        <div class="btn-group" style="margin-top:8px">
+          <button id="btnBuildMonth" class="btn">Gerar relatório</button>
+          <button id="btnDLMonthMD" class="btn" disabled>Baixar .md</button>
+          <button id="btnDLMonthCSV" class="btn" disabled>Baixar .csv (agenda)</button>
+          <button id="btnCopyMonth" class="btn" disabled>Copiar</button>
+        </div>
+        <h3 style="margin-top:14px">Prévia</h3>
+        <pre id="monthPreview" class="pre"></pre>
+      </div>
+
+      <!-- TRIMESTRAL -->
+      <div class="tab-pane" id="tab-trimestral">
+        <div class="form grid-2" style="max-width:720px">
+          <div>
+            <label>Ano</label>
+            <select id="qYear"></select>
+          </div>
+          <div>
+            <label>Trimestre</label>
+            <select id="qQuarter">
+              <option value="1">T1 (Jan–Mar)</option>
+              <option value="2">T2 (Abr–Jun)</option>
+              <option value="3">T3 (Jul–Set)</option>
+              <option value="4">T4 (Out–Dez)</option>
+            </select>
+          </div>
+        </div>
+        <div class="btn-group" style="margin-top:8px">
+          <button id="btnBuildQuarter" class="btn">Gerar relatório</button>
+          <button id="btnDLQuarterMD" class="btn" disabled>Baixar .md</button>
+          <button id="btnCopyQuarter" class="btn" disabled>Copiar</button>
+        </div>
+        <h3 style="margin-top:14px">Prévia</h3>
+        <pre id="quarterPreview" class="pre"></pre>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>Flow On © 2025 — Planeje. Execute. Evolua.</p>
+  </footer>
+
+  <script src="../../assets/js/reports.js?v=1"></script>
+</body>
+</html>
