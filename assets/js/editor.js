@@ -33,7 +33,6 @@ function save(){
   const script = document.getElementById('eScript').value;
 
   if(postId){
-    // update
     const ix = s.posts.findIndex(p=>p.id===postId);
     if(ix>=0){
       s.posts[ix].type   = type;
@@ -42,7 +41,6 @@ function save(){
       s.posts[ix].script = script;
     }
   }else{
-    // create from themeId
     if(!themeId){ alert('Tema inválido. Volte e selecione uma ideia.'); return; }
     s.posts.push({
       id:'p_'+Date.now(),
@@ -56,7 +54,7 @@ function save(){
     });
   }
   Data.save();
-  location.href = './'; // volta para Temas
+  location.href = './';
 }
 
 function del(){
