@@ -156,18 +156,17 @@
     </section>
 
     <!-- TRIMESTRAL -->
-    <section class="card tab-pane" id="tab-trimestral">
-      <h2>Trimestral</h2>
-      <div class="muted">Espaço para metas e ajustes de hábitos a cada 90 dias.</div>
-      <textarea id="triNotes" rows="8" placeholder="Metas, ajustes e observações do trimestre..." style="width:100%"></textarea>
-      <div style="margin-top:8px"><button id="btnSaveTri" class="btn">Salvar</button></div>
-    </section>
-  </main>
+<section class="card tab-pane" id="tab-trimestral">
+  <div class="card-head" style="align-items:center; gap:10px; flex-wrap:wrap">
+    <h2 style="margin-right:6px">Trimestral</h2>
+    <div class="btn-group">
+      <button id="btnTriPrev" class="btn small">⬅️ Trimestre anterior</button>
+      <div id="triLabel" class="small" style="padding:6px 10px; border:1px solid var(--border); border-radius:10px"></div>
+      <button id="btnTriNext" class="btn small">Próximo trimestre ➡️</button>
+    </div>
+  </div>
 
-  <footer class="footer">
-    <p>Flow On © 2025 — Planeje. Execute. Evolua.</p>
-  </footer>
-
-  <script src="../../assets/js/journal.js?v=8"></script>
-</body>
-</html>
+  <div class="muted">Espaço para metas e ajustes de hábitos a cada 90 dias.</div>
+  <textarea id="triNotes" rows="8" placeholder="Metas, ajustes e observações do trimestre..." style="width:100%"></textarea>
+  <div style="margin-top:8px"><button id="btnSaveTri" class="btn">Salvar</button></div>
+</section>
