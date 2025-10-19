@@ -5,34 +5,97 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Flow On — Configurações</title>
 
-  <!-- CSS -->
+  <!-- CSS principal -->
   <link rel="stylesheet" href="../../assets/css/style.css" />
 
-  <!-- FAVICONS (SVG + fallback PNG) -->
+  <!-- FAVICONS -->
   <link rel="icon" href="../../assets/img/favicon.svg" type="image/svg+xml" />
   <link rel="icon" href="../../assets/img/favicon-32.png" sizes="32x32" type="image/png" />
   <link rel="apple-touch-icon" href="../../assets/img/icons/icon-192.png" />
 
-  <!-- PWA mínimo (não mexe em cache, só permite instalar) -->
+  <!-- PWA -->
   <link rel="manifest" href="../../manifest.webmanifest" />
   <meta name="theme-color" content="#0b0d10" />
+
+  <style>
+    :root{
+      --surface: rgba(20,20,20,.7);
+      --text:#cfcfd3; --text-strong:#fff;
+      --brand:#f2a65a; --brand-ghost:rgba(242,166,90,.18);
+      --border: rgba(255,255,255,.08);
+      --radius:14px; --radius-lg:18px;
+    }
+
+    /* NAVBAR / MENU padrão Home */
+    .fo-topbar{
+      position:sticky; top:0; z-index:50;
+      display:flex; justify-content:center; align-items:center;
+      padding:10px 12px; background:var(--surface);
+      backdrop-filter:blur(8px); border-bottom:1px solid var(--border);
+    }
+    .fo-brand{display:inline-flex;align-items:center;gap:10px;text-decoration:none}
+    .fo-logo{width:28px;height:28px;display:block;filter:drop-shadow(0 0 6px var(--brand-ghost))}
+    .fo-brand-text{color:var(--brand);font-weight:600;letter-spacing:.6px;font-size:1.05rem}
+
+    .fo-nav{
+      position:sticky; top:60px; z-index:40;
+      display:flex; justify-content:center; align-items:center; gap:22px;
+      padding:14px 10px; margin:10px auto 18px; width:min(980px,96%);
+      background:var(--surface); backdrop-filter:blur(8px);
+      border:1px solid var(--border); border-radius:var(--radius-lg);
+    }
+    .fo-item{
+      text-decoration:none; color:var(--text);
+      display:grid; place-items:center; gap:6px;
+      padding:8px 10px; min-width:74px; border-radius:var(--radius);
+      transition:transform .18s ease,color .18s ease,background .18s ease,box-shadow .18s ease;
+    }
+    .fo-item .fo-ico{font-size:1.4rem;line-height:1}
+    .fo-item .fo-label{font-size:.9rem;font-weight:500}
+    .fo-item:hover,.fo-item:focus-visible{
+      color:var(--text-strong); background:rgba(255,255,255,.04); transform:translateY(-1px); outline:none;
+    }
+    .fo-item.is-active{
+      color:var(--text-strong);
+      background:linear-gradient(180deg,rgba(242,166,90,.16),rgba(242,166,90,.06));
+      box-shadow:0 6px 14px rgba(242,166,90,.12), inset 0 0 0 1px rgba(242,166,90,.35);
+    }
+    @media (max-width:380px){
+      .fo-nav{gap:14px}
+      .fo-item{min-width:66px;padding:8px 8px}
+      .fo-item .fo-label{font-size:.85rem}
+    }
+
+    .container--single{max-width:780px;margin:0 auto}
+    .small{font-size:.9rem}
+  </style>
 </head>
+
 <body>
-  <header class="navbar">
-    <div class="nav-inner">
-      <div class="logo">
-        <img src="../../assets/img/logo.svg" alt="Flow On logo" />
-        <span>Flow On</span>
-      </div>
-      <nav class="menu">
-        <a href="../../index.html">🏠 Home</a>
-        <a href="../journal/">📓 Journal</a>
-        <a href="../themes/">🎬 Temas</a>
-        <a href="./" class="active">⚙️ Configurações</a>
-      </nav>
-    </div>
+  <!-- TOPBAR + MENU -->
+  <header class="fo-topbar">
+    <a class="fo-brand" href="../../index.html">
+      <img src="../../assets/img/logo.svg" alt="Flow On logo" class="fo-logo" />
+      <span class="fo-brand-text">Flow On</span>
+    </a>
   </header>
 
+  <nav class="fo-nav" role="navigation" aria-label="Navegação principal">
+    <a class="fo-item" href="../../index.html">
+      <span class="fo-ico">🏠</span><span class="fo-label">Home</span>
+    </a>
+    <a class="fo-item" href="../journal/">
+      <span class="fo-ico">📓</span><span class="fo-label">Journal</span>
+    </a>
+    <a class="fo-item" href="../themes/">
+      <span class="fo-ico">🎬</span><span class="fo-label">Temas</span>
+    </a>
+    <a class="fo-item is-active active" href="./">
+      <span class="fo-ico">⚙️</span><span class="fo-label">Configurações</span>
+    </a>
+  </nav>
+
+  <!-- CONTEÚDO PRINCIPAL -->
   <main class="container container--single">
     <section class="card">
       <h2>Preferências</h2>
@@ -80,10 +143,10 @@
     <p>Flow On © 2025 — Planeje. Execute. Evolua.</p>
   </footer>
 
-  <!-- Settings com compat v2 + legacy -->
+  <!-- JS de configurações -->
   <script src="../../assets/js/settings.js"></script>
 
-  <!-- Registro do Service Worker (neutro; não faz cache por conta própria) -->
+  <!-- Registro do Service Worker -->
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
