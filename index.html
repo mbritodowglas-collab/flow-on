@@ -126,6 +126,7 @@
   </nav>
 
   <main class="container">
+    <!-- Progresso Geral -->
     <section class="fo-card" id="progress-card">
       <h2 class="fo-title">Progresso Geral</h2>
       <div class="fo-kpis">
@@ -135,6 +136,15 @@
       </div>
     </section>
 
+    <!-- NOVO: Exercício & Reflexão do Dia -->
+    <section class="fo-card" id="mind365">
+      <h2 class="fo-title">Exercício & Reflexão do Dia</h2>
+      <div id="mind365-card">
+        <p class="muted small">Carregando exercício...</p>
+      </div>
+    </section>
+
+    <!-- Visão do Trimestre -->
     <section class="fo-card" id="quarter-card">
       <h2 class="fo-title">Visão do Trimestre <span class="fo-muted" id="quarter-label"></span></h2>
       <div class="fo-muted" id="quarter-notes" style="white-space:pre-line">Sem anotações do trimestre ainda.</div>
@@ -143,6 +153,7 @@
       </div>
     </section>
 
+    <!-- Hábitos -->
     <section class="card" id="habits-card">
       <h2>Hábitos da Semana
         <button id="btn-habits-21" class="btn small" style="margin-left:8px">📈 21 dias</button>
@@ -151,11 +162,13 @@
       <div id="habits-21-panel" style="display:none"></div>
     </section>
 
+    <!-- Agenda de Conteúdo -->
     <section class="card">
       <h2>Agenda de Conteúdo</h2>
       <div id="content-summary"><p>Carregando publicações...</p></div>
     </section>
 
+    <!-- Resumo do Journal -->
     <section class="card">
       <h2>Resumo do Journal</h2>
       <div id="journal-summary"><p>Carregando registros...</p></div>
@@ -166,6 +179,7 @@
     <p>Flow On © 2025 — Planeje. Execute. Evolua.</p>
   </footer>
 
+  <!-- ======= SEUS SCRIPTS ORIGINAIS (inalterados) ======= -->
   <script>
   document.addEventListener('DOMContentLoaded', function(){
     /* ===== Estados ===== */
@@ -411,6 +425,9 @@
 
   });
   </script>
+
+  <!-- NOVO include: injeta o exercício & reflexão do dia no #mind365-card -->
+  <script src="assets/js/mind365.js"></script>
 
   <script>
   if('serviceWorker'in navigator){
