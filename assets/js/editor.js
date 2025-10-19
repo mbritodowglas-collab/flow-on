@@ -12,8 +12,8 @@ const Data = {
 };
 
 const qs = new URLSearchParams(location.search);
-const postId  = qs.get('postId');
-const themeId = qs.get('themeId');
+const postId  = qs.get('postId');   // editar post existente
+const themeId = qs.get('themeId');  // criar post novo a partir de uma ideia
 
 function fillForm(){
   const s = Data.get();
@@ -21,27 +21,29 @@ function fillForm(){
   const theme = s.themes.find(t=>t.id=== (post?.themeId || themeId));
 
   document.getElementById('eThemeTitle').value = theme?.title || '—';
-  document.getElementById('eType').value = post?.type || 'yt_long';
-  document.getElementById('eDate').value = post?.date || '';
+  document.getElementById('eType').value  = post?.type || 'yt_long';
+  document.getElementById('eDate').value  = post?.date || '';
   document.getElementById('eScript').value = post?.script || '';
 }
 
 function save(){
   const s = Data.get();
-  const type = document.getElementById('eType').value;
-  const date = document.getElementById('eDate').value;
+  const type   = document.getElementById('eType').value;
+  const date   = document.getElementById('eDate').value;
   const script = document.getElementById('eScript').value;
 
   if(postId){
+    // update
     const ix = s.posts.findIndex(p=>p.id===postId);
     if(ix>=0){
-      s.posts[ix].type = type;
-      s.posts[ix].date = date;                 // data única define Agendado
+      s.posts[ix].type   = type;
+      s.posts[ix].date   = date;
       s.posts[ix].status = date ? 'Agendado' : 'Rascunho';
       s.posts[ix].script = script;
     }
   }else{
-    if(!themeId){ alert('Sem tema válido.'); return; }
+    // create from themeId
+    if(!themeId){ alert('Tema inválido. Volte e selecione uma ideia.'); return; }
     s.posts.push({
       id:'p_'+Date.now(),
       themeId,
@@ -54,10 +56,11 @@ function save(){
     });
   }
   Data.save();
-  location.href = './';
+  location.href = './'; // volta para Temas
 }
 
 function del(){
+  if(!postId){ location.href='./'; return; }
   if(!confirm('Excluir este post?')) return;
   const s = Data.get();
   const ix = s.posts.findIndex(p=>p.id===postId);
