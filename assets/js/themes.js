@@ -1,4 +1,4 @@
-/* ====== Flow On — Temas & Roteiros (30 dias + data única) ====== */
+/* ====== Flow On — Temas & Roteiros (30 dias, data única, Análise) ====== */
 const STORE_KEY = 'flowon.v1';
 
 const Data = {
@@ -8,7 +8,6 @@ const Data = {
       const raw = localStorage.getItem(STORE_KEY);
       if(raw) this._s = JSON.parse(raw);
 
-      // seed compatível com data única
       if(!this._s.themes?.length){
         this._s.themes = [{
           id:'t1',
@@ -17,8 +16,9 @@ const Data = {
           objetivo:'Chamar para avaliação',
           status:'Rascunho',
           platforms:['YouTube','Instagram'],
-          dates:{ publicacao:'' }, // <<< data única
+          dates:{ publicacao:'' },                 // data única
           scripts:{ yt:'', reels:'' },
+          analytics:{ views:0, likes:0, comments:0, clicks:0, notes:'' },
           archived:false
         }];
       }
@@ -28,17 +28,17 @@ const Data = {
   get(){ return this._s }
 };
 
-/* utils */
-const toISO = d => new Date(d).toISOString().slice(0,10);
-function weekRange(date){
-  const d = new Date(date); const day = (d.getDay()+6)%7; // seg=0
-  const monday = new Date(d); monday.setDate(d.getDate()-day);
-  return [...Array(7)].map((_,i)=>{ const x = new Date(monday); x.setDate(monday.getDate()+i); return toISO(x) });
-}
-// 30 dias a partir de hoje
+/* utils — datas locais */
+const toLocalISO = (date) => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth()+1).padStart(2,'0');
+  const d = String(date.getDate()).padStart(2,'0');
+  return `${y}-${m}-${d}`;
+};
+// próximos N dias
 function daysAhead(n = 30){
   const start = new Date();
-  return [...Array(n)].map((_,i)=>{ const d = new Date(start); d.setDate(start.getDate()+i); return toISO(d) });
+  return [...Array(n)].map((_,i)=>{ const d = new Date(start); d.setDate(start.getDate()+i); return toLocalISO(d) });
 }
 
 /* render */
@@ -46,43 +46,47 @@ let editingId = null;
 
 function drawIdeas(){
   const box = document.getElementById('ideasList'); box.innerHTML = '';
-  Data.get().themes.filter(t=>t.status==='Rascunho' && !t.archived && !t.dates?.publicacao).forEach(t=>{
-    const row = document.createElement('div'); row.className='list-day';
-    row.innerHTML = `
-      <div class="list-day-head">
-        <span class="small">${t.title}</span>
-        <span>
-          <button class="btn small" data-open="${t.id}">Editar</button>
-          <button class="btn small" data-del="${t.id}">Excluir</button>
-        </span>
-      </div>`;
-    row.querySelector('[data-open]').onclick = ()=> openThemeModal(t);
-    row.querySelector('[data-del]').onclick = ()=>{ const s=Data.get(); s.themes=s.themes.filter(x=>x.id!==t.id); Data.save(); drawIdeas(); };
-    box.appendChild(row);
-  });
+  Data.get().themes
+    .filter(t=>!t.archived && (!t.dates?.publicacao) && t.status==='Rascunho')
+    .forEach(t=>{
+      const row = document.createElement('div'); row.className='list-day';
+      row.innerHTML = `
+        <div class="list-day-head">
+          <span class="small">${t.title}</span>
+          <span>
+            <button class="btn small" data-open="${t.id}">Editar</button>
+            <button class="btn small" data-del="${t.id}">Excluir</button>
+          </span>
+        </div>`;
+      row.querySelector('[data-open]').onclick = ()=> openThemeModal(t);
+      row.querySelector('[data-del]').onclick = ()=>{ const s=Data.get(); s.themes=s.themes.filter(x=>x.id!==t.id); Data.save(); drawIdeas(); };
+      box.appendChild(row);
+    });
   if(!box.children.length) box.innerHTML = `<div class="muted">Sem rascunhos por enquanto.</div>`;
 }
 
 function drawDrafts(){
   const box = document.getElementById('draftsList'); box.innerHTML = '';
-  Data.get().themes.filter(t=>t.dates?.publicacao && !t.archived && t.status!=='Publicado').forEach(t=>{
-    const row = document.createElement('div'); row.className='list-day';
-    row.innerHTML = `
-      <div class="list-day-head">
-        <span class="small"><b>${t.title}</b> • ${(t.platforms||[]).join(' • ')||'—'} • Pub.: ${t.dates?.publicacao||'—'}</span>
-        <span>
-          <button class="btn small" data-open="${t.id}">Abrir</button>
-          <button class="btn small" data-del="${t.id}">Excluir</button>
-        </span>
-      </div>`;
-    row.querySelector('[data-open]').onclick = ()=> openThemeModal(t);
-    row.querySelector('[data-del]').onclick = ()=>{ const s=Data.get(); s.themes=s.themes.filter(x=>x.id!==t.id); Data.save(); drawDrafts(); drawWeekPub(); };
-    box.appendChild(row);
-  });
+  Data.get().themes
+    .filter(t=>!t.archived && t.dates?.publicacao && t.status!=='Publicado')
+    .forEach(t=>{
+      const row = document.createElement('div'); row.className='list-day';
+      row.innerHTML = `
+        <div class="list-day-head">
+          <span class="small"><b>${t.title}</b> • ${(t.platforms||[]).join(' • ')||'—'} • Pub.: ${t.dates?.publicacao||'—'}</span>
+          <span>
+            <button class="btn small" data-open="${t.id}">Abrir</button>
+            <button class="btn small" data-del="${t.id}">Excluir</button>
+          </span>
+        </div>`;
+      row.querySelector('[data-open]').onclick = ()=> openThemeModal(t);
+      row.querySelector('[data-del]').onclick = ()=>{ const s=Data.get(); s.themes=s.themes.filter(x=>x.id!==t.id); Data.save(); drawDrafts(); drawPlan(); };
+      box.appendChild(row);
+    });
   if(!box.children.length) box.innerHTML = `<div class="muted">Nenhum item agendado ainda.</div>`;
 }
 
-function drawWeekPub(){ // mantém o id, mas agora mostra 30 dias
+function drawPlan(){ // planejamento 30 dias
   const box = document.getElementById('weekPub'); box.innerHTML = '';
   const dates = daysAhead(30);
   dates.forEach(d=>{
@@ -107,7 +111,7 @@ function drawWeekPub(){ // mantém o id, mas agora mostra 30 dias
           <button class="btn small" data-ok="${t.id}" style="margin-left:8px">OK publicado</button>`;
         row.querySelector('[data-ok]').onclick = ()=>{
           const s=Data.get(); const ix=s.themes.findIndex(x=>x.id===t.id);
-          if(ix>=0){ s.themes[ix].status='Publicado'; s.themes[ix].archived=true; Data.save(); drawWeekPub(); }
+          if(ix>=0){ s.themes[ix].status='Publicado'; /* NÃO arquiva ainda */ Data.save(); drawPlan(); drawInsights(); }
         };
         list.appendChild(row);
       });
@@ -117,10 +121,66 @@ function drawWeekPub(){ // mantém o id, mas agora mostra 30 dias
   });
 }
 
+/* === ANÁLISE: publicados (com possibilidade de arquivar) === */
+function drawInsights(){
+  const box = document.getElementById('insightsList'); if(!box) return;
+  box.innerHTML = '';
+
+  const published = Data.get().themes.filter(t=> t.status==='Publicado' && !t.archived);
+  if(!published.length){
+    box.innerHTML = `<div class="muted">Sem itens publicados aguardando análise.</div>`;
+    return;
+  }
+
+  published.forEach(t=>{
+    t.analytics = t.analytics || { views:0, likes:0, comments:0, clicks:0, notes:'' };
+    const row = document.createElement('div'); row.className='list-day';
+    row.innerHTML = `
+      <div class="list-day-head">
+        <span class="small"><b>${t.title}</b> • ${t.dates?.publicacao||'—'} • ${(t.platforms||[]).join(' • ')||'—'}</span>
+      </div>
+      <div class="small" style="display:grid; gap:8px; grid-template-columns: repeat(4, minmax(0,1fr));">
+        <label>Views<br><input type="number" min="0" value="${t.analytics.views||0}" data-f="views" style="width:100%"></label>
+        <label>Likes<br><input type="number" min="0" value="${t.analytics.likes||0}" data-f="likes" style="width:100%"></label>
+        <label>Comments<br><input type="number" min="0" value="${t.analytics.comments||0}" data-f="comments" style="width:100%"></label>
+        <label>Cliques/CTA<br><input type="number" min="0" value="${t.analytics.clicks||0}" data-f="clicks" style="width:100%"></label>
+      </div>
+      <div style="margin-top:8px">
+        <textarea data-f="notes" rows="3" placeholder="Observações, hipóteses, próximos testes..." style="width:100%">${t.analytics.notes||''}</textarea>
+      </div>
+      <div style="margin-top:8px; display:flex; gap:8px">
+        <button class="btn small" data-save="${t.id}">Salvar análise</button>
+        <button class="btn small" data-archive="${t.id}">Arquivar item</button>
+      </div>
+    `;
+
+    row.querySelector('[data-save]').onclick = ()=>{
+      const get = sel => row.querySelector(`[data-f="${sel}"]`);
+      t.analytics = {
+        views: Number(get('views').value||0),
+        likes: Number(get('likes').value||0),
+        comments: Number(get('comments').value||0),
+        clicks: Number(get('clicks').value||0),
+        notes: get('notes').value||''
+      };
+      Data.save(); alert('Análise salva!');
+    };
+    row.querySelector('[data-archive]').onclick = ()=>{
+      if(confirm('Arquivar este item? Você poderá vê-lo no histórico futuramente.')){
+        t.archived = true; Data.save(); drawInsights();
+      }
+    };
+
+    box.appendChild(row);
+  });
+}
+
+/* MODAL */
+let modalEl;
 function openThemeModal(data={}){
   const s = Data.get();
-  const modal = document.getElementById('modalTheme');
-  modal.showModal();
+  modalEl = document.getElementById('modalTheme');
+  modalEl.showModal();
 
   editingId = data.id || null;
   document.getElementById('fTitulo').value = data.title||'';
@@ -137,7 +197,7 @@ function openThemeModal(data={}){
 
   document.getElementById('btnSaveTheme').onclick = ()=>{
     const pub = document.getElementById('dPublicacao').value;
-    const status = pub ? 'Agendado' : 'Rascunho'; // lógica simples confirmada (Opção A)
+    const status = pub ? 'Agendado' : 'Rascunho';
 
     const obj = {
       id: editingId || ('t_'+Date.now()),
@@ -150,8 +210,9 @@ function openThemeModal(data={}){
         document.getElementById('pBlog').checked && 'Blog'
       ].filter(Boolean),
       status,
-      dates: { publicacao: pub }, // data única
+      dates: { publicacao: pub },
       scripts: { yt: document.getElementById('rYT').value, reels: document.getElementById('rReels').value },
+      analytics: data.analytics || { views:0, likes:0, comments:0, clicks:0, notes:'' },
       archived: data.archived || false
     };
 
@@ -159,27 +220,28 @@ function openThemeModal(data={}){
     if(ix>=0) s.themes[ix]=obj; else s.themes.push(obj);
     Data.save();
 
-    modal.close();
-    drawIdeas(); drawDrafts(); drawWeekPub();
+    modalEl.close();
+    drawIdeas(); drawDrafts(); drawPlan(); drawInsights();
   };
 }
 
 /* boot */
 document.addEventListener('DOMContentLoaded', ()=>{
-  // marca menu ativo
   document.querySelectorAll('.menu a').forEach(a=>{
     a.classList.toggle('active', a.getAttribute('href') === './' || a.getAttribute('href')?.endsWith('/themes/'));
   });
 
   Data.load();
-  drawIdeas(); drawDrafts(); drawWeekPub();
+  drawIdeas(); drawDrafts(); drawPlan(); drawInsights();
 
   document.getElementById('btnAddIdea').onclick = ()=>{
     const title = prompt('Título da ideia:'); if(!title) return;
     Data.get().themes.push({
       id:'t_'+Date.now(), title, status:'Rascunho',
       persona:'', objetivo:'', platforms:[],
-      dates:{ publicacao:'' }, scripts:{ yt:'', reels:'' }, archived:false
+      dates:{ publicacao:'' }, scripts:{ yt:'', reels:'' },
+      analytics:{ views:0, likes:0, comments:0, clicks:0, notes:'' },
+      archived:false
     });
     Data.save(); drawIdeas();
   };
