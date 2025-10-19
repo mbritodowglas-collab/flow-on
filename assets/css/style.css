@@ -451,3 +451,38 @@ hr.sep{ border:0; border-top:1px solid var(--border); margin:12px 0 }
   .logo span{ display:none }
 }
 
+/* ====== Home: Habits (alinhado com página de Hábitos) ====== */
+.habits-compact { margin-top: 6px; }
+.habit-row {
+  display: grid;
+  grid-template-columns: 1fr auto 42px;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.habit-row:last-child { border-bottom: 0; }
+
+.habit-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.habit-dots { display: flex; gap: 8px; }
+.habit-dots .dot {
+  width: 16px; height: 16px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,.18);
+  background: transparent;
+  box-sizing: border-box;
+}
+.habit-dots .dot.ok {
+  border-color: #3be477;
+}
+.habit-dots .dot.miss {
+  border-color: #ff6b6b;
+  position: relative;
+}
+.habit-dots .dot.miss::after {
+  content: "";
+  position: absolute; inset: 4px;
+  background: #ff6b6b; border-radius: 50%; opacity: .35;
+}
+.habit-pct { text-align: right; font-variant-numeric: tabular-nums; opacity:.9; }
+
