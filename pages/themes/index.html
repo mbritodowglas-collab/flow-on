@@ -24,6 +24,7 @@
   </header>
 
   <main class="container">
+    <!-- IDEIAS (somente lista + usar no rascunho) -->
     <section class="card">
       <div class="card-head">
         <h2>Banco de Ideias</h2>
@@ -32,25 +33,26 @@
       <div id="ideasList"></div>
     </section>
 
+    <!-- RASCUNHOS (POSTS sem data, agrupados por tipo) -->
     <section class="card">
       <h2>Rascunhos</h2>
+      <div class="muted small" style="margin-bottom:6px">Um rascunho = 1 destino. Ex.: YouTube <u>ou</u> Reels <u>ou</u> Carrossel…</div>
       <div id="draftsList"></div>
     </section>
 
+    <!-- PLANEJAMENTO 30 DIAS -->
     <section class="card">
       <div class="card-head">
         <h2>Planejamento (próximos 30 dias)</h2>
-        <button id="btnNewTheme" class="btn">+ Novo Tema</button>
+        <button id="btnNewFromBlank" class="btn">+ Post em branco</button>
       </div>
-      <div id="weekPub"></div>
+      <div id="planList"></div>
     </section>
 
-    <!-- NOVA SEÇÃO -->
+    <!-- ANÁLISE -->
     <section class="card">
       <h2>Análise de Conteúdo</h2>
-      <div class="muted small" style="margin-bottom:6px">
-        Preencha métricas dos posts publicados e arquive quando encerrar.
-      </div>
+      <div class="muted small" style="margin-bottom:6px">Preencha métricas dos posts publicados e arquive quando encerrar.</div>
       <div id="insightsList"></div>
     </section>
   </main>
@@ -59,55 +61,6 @@
     <p>Flow On © 2025 — Planeje. Execute. Evolua.</p>
   </footer>
 
-  <!-- Modal de edição/criação -->
-  <dialog id="modalTheme" class="modal">
-    <form method="dialog" class="modal-box">
-      <div class="card-head" style="margin-bottom:8px">
-        <h3>Tema</h3>
-        <button class="btn">Fechar</button>
-      </div>
-      <div class="grid-2">
-        <div class="form">
-          <label>Título</label>
-          <input id="fTitulo" />
-          <label>Persona</label>
-          <input id="fPersona" />
-          <label>Objetivo/CTA</label>
-          <input id="fObjetivo" />
-
-          <label>Data de publicação</label>
-          <input id="dPublicacao" type="date" />
-
-          <label>Plataformas</label>
-          <div class="small">
-            <label><input type="checkbox" id="pYT"> YouTube</label> ·
-            <label><input type="checkbox" id="pIG"> Instagram</label> ·
-            <label><input type="checkbox" id="pBlog"> Blog</label>
-          </div>
-
-          <label>Status (auto)</label>
-          <select id="fStatus" disabled>
-            <option>Rascunho</option>
-            <option>Agendado</option>
-          </select>
-          <div class="muted small">* Sem data = Rascunho • Com data = Agendado</div>
-        </div>
-
-        <div class="form">
-          <label>Roteiro — YouTube</label>
-          <textarea id="rYT" rows="6" placeholder="Título, thumb, intro 30s, tópicos, CTA"></textarea>
-          <label>Reels/Stories</label>
-          <textarea id="rReels" rows="6" placeholder="Hook, micro-roteiro, CTA"></textarea>
-        </div>
-      </div>
-
-      <div class="muted" id="themeIdInfo" style="margin-top:8px"></div>
-      <div style="margin-top:10px">
-        <button id="btnSaveTheme" class="btn">Salvar</button>
-      </div>
-    </form>
-  </dialog>
-
-  <script src="../../assets/js/themes.js"></script>
+  <script src="../../assets/js/themes.js?v=2"></script>
 </body>
 </html>
