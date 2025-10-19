@@ -1,224 +1,156 @@
-/* Flow On — Home EXTRAS
-   - Botão "Ver 21 dias" em Hábitos + grade compacta
-   - Card "Progresso Geral" (KPIs simples)
-   - Card "Visão do Trimestre" (pega do Journal › Trimestral)
-   Seguro: só injeta conteúdo na Home sem quebrar o que já existe.
-*/
+// assets/js/home-extra.js
+(function(){
+  console.log("[home-extra] carregado");
 
-/* ---------- Storage básico (compatível com o restante do app) ---------- */
-const FO_STORE = 'flowon';
-const FOData = {
-  _s: null,
-  load(){ try{ this._s = JSON.parse(localStorage.getItem(FO_STORE)||'{}'); } catch(e){ this._s = {}; } },
-  get(){ if(!this._s) this.load(); return this._s; },
-  save(){ localStorage.setItem(FO_STORE, JSON.stringify(this._s||{})); }
-};
+  // === helpers ===
+  const KEY='flowon';
+  let S={}; try{ S=JSON.parse(localStorage.getItem(KEY)||'{}'); }catch(e){ S={}; }
+  const J=()=>{ S.journal ||= {}; return S.journal; };
 
-/* ---------- Helpers ---------- */
-const toISO = d => d.toISOString().slice(0,10);
-function todayISO(){ const d=new Date(); d.setHours(0,0,0,0); return toISO(d); }
-function addDaysISO(iso, n){ const d=new Date(iso+'T00:00:00'); d.setDate(d.getDate()+n); return toISO(d); }
-function firstDayOfWeekISO(baseISO=todayISO()){
-  const d = new Date(baseISO+'T00:00:00');
-  const dow = (d.getDay()+6)%7; // segunda=0
-  d.setDate(d.getDate()-dow);
-  return toISO(d);
-}
-function quarterOf(dateISO){
-  const d = new Date(dateISO+'T00:00:00');
-  const q = Math.floor(d.getMonth()/3)+1;
-  return {year: d.getFullYear(), q};
-}
-function quarterKey(y,q){ return `${y}-T${q}`; }
-function quarterLabel(y,q){ return `T${q} de ${y}`; }
+  const toISO=d=>d.toISOString().slice(0,10);
+  const todayISO=()=>{ const d=new Date(); d.setHours(0,0,0,0); return toISO(d); };
+  const addDays=(iso,n)=>{ const d=new Date(iso+'T00:00:00'); d.setDate(d.getDate()+n); return toISO(d); };
+  const firstDow=(iso=todayISO())=>{
+    const d=new Date(iso+'T00:00:00');
+    const k=(d.getDay()+6)%7; // segunda=0
+    d.setDate(d.getDate()-k);
+    return toISO(d);
+  };
+  const qKey=(y,q)=>`${y}-T${q}`, qLabel=(y,q)=>`T${q} de ${y}`;
+  const quarter=iso=>{ const d=new Date(iso+'T00:00:00'); return {year:d.getFullYear(), q:Math.floor(d.getMonth()/3)+1}; };
 
-/* ---------- UI helpers ---------- */
-function injectStyles(){
-  if(document.getElementById('fo-home-extras-style')) return;
-  const css = `
-    .fo-card{border:1px solid var(--border); border-radius:16px; padding:14px; margin:14px 0; background:rgba(255,255,255,.02);}
-    .fo-title{font-size:1.25rem; font-weight:700; margin:0 0 8px;}
-    .fo-muted{opacity:.7}
-    .fo-kpis{display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:10px; margin-top:8px}
-    .fo-kpi{border:1px solid var(--border); border-radius:12px; padding:12px}
-    .fo-kpi strong{font-size:1.4rem}
-    .fo-flex{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
-    .fo-dots{display:grid; grid-template-columns:repeat(21, 10px); gap:6px; margin-top:10px}
-    .fo-dot{width:10px; height:10px; border-radius:50%; border:1px solid var(--border); opacity:.6}
-    .fo-dot.on{background:linear-gradient(180deg,#50fa7b,#2ecc71); border-color:transparent; opacity:1}
-    .fo-habit-row{margin:10px 0}
-    .fo-habit-name{font-weight:600; margin-bottom:6px}
-    .fo-link{color:#7aa2ff; text-decoration:underline}
-  `;
-  const s = document.createElement('style');
-  s.id = 'fo-home-extras-style';
-  s.textContent = css;
-  document.head.appendChild(s);
-}
-function makeCard(html){
-  const div = document.createElement('section');
-  div.className = 'fo-card';
-  div.innerHTML = html;
-  return div;
-}
+  // util seguro de setText
+  function setText(id,txt){ const el=document.getElementById(id); if(el) el.textContent = (txt ?? ""); }
 
-/* ---------- Locate blocks on current Home ---------- */
-function findContainer(){ return document.querySelector('.container') || document.body; }
-function findHabitsSection() {
-  // tenta achar pelo título "Hábitos da Semana"
-  const nodes = Array.from(document.querySelectorAll('.card, section, div'));
-  return nodes.find(n => /Hábitos da Semana/i.test(n.textContent||'')) || null;
-}
-
-/* ---------- KPIs ---------- */
-function calcKPIs(){
-  const s = FOData.get();
-
-  // 1) % hábitos concluídos nesta semana
-  // Estrutura tolerante: s.journal.habits.items e s.journal.habits.marks[date] = [ids] OU {id:true}
-  let habitsPct = '—';
+  // ========== KPIs ==========
   try{
-    const H = (s.journal && s.journal.habits) ? s.journal.habits : null;
-    if(H && H.items && H.items.length){
-      const ids = H.items.map(h=>h.id || h.key || h.title);
-      const start = firstDayOfWeekISO();
-      let done=0, total=ids.length*7;
-      for(let i=0;i<7;i++){
-        const d = addDaysISO(start,i);
-        const marks = (H.marks && H.marks[d]) ? H.marks[d] : null;
-        if(marks){
-          ids.forEach(id=>{
-            if(Array.isArray(marks) ? marks.includes(id) : !!marks[id]) done++;
-          });
+    let habitsPct='—', d7='0', posts7='0';
+
+    // Hábitos (semana)
+    try{
+      const H=J().habits;
+      if(H?.items?.length){
+        const ids=H.items.map(h=>h.id||h.key||h.title);
+        const start=firstDow(); let done=0,total=ids.length*7;
+        for(let i=0;i<7;i++){
+          const d=addDays(start,i), m=H.marks?.[d];
+          if(m){
+            ids.forEach(id=>{
+              const v = Array.isArray(m) ? m.includes(id) : (typeof m==='object' && !!m[id]);
+              if(v) done++;
+            });
+          }
         }
+        habitsPct = total? (Math.round(done/total*100)+'%') : '—';
       }
-      habitsPct = total ? Math.round((done/total)*100)+'%' : '—';
-    }
-  }catch(e){ /* silencioso */ }
+    }catch(e){ console.warn("[home-extra] KPI hábitos:", e); }
 
-  // 2) Dailies feitos nos últimos 7 dias
-  let dailies7 = '0';
+    // Dailies nos últimos 7 dias
+    try{
+      const D=J().daily?.byDate||{};
+      let c=0;
+      for(let i=0;i<7;i++){
+        const d=addDays(todayISO(),-i), v=D[d];
+        if(v&&(v.focus||v.notes||v.mits||v.gratitude)) c++;
+      }
+      d7=String(c);
+    }catch(e){ console.warn("[home-extra] KPI dailies:", e); }
+
+    // Conteúdos próximos 7 dias
+    try{
+      const sched=(S.content?.scheduled)||(S.themes?.scheduled)||{};
+      let c=0;
+      for(let i=0;i<7;i++){
+        const d=addDays(todayISO(),i); const a=sched[d];
+        if(Array.isArray(a)) c+=a.length;
+        else if(a&&typeof a==='object') c+=Object.keys(a).length;
+      }
+      posts7=String(c);
+    }catch(e){ console.warn("[home-extra] KPI posts:", e); }
+
+    setText('kpi-habits', habitsPct);
+    setText('kpi-dailies', d7);
+    setText('kpi-posts', posts7);
+  }catch(e){ console.error("[home-extra] KPIs falhou:", e); }
+
+  // ========== Trimestral (lookup robusto) ==========
   try{
-    const D = s.journal?.daily?.byDate || {};
-    let c=0;
-    for(let i=0;i<7;i++){
-      const d = addDaysISO(todayISO(), -i);
-      if(D[d] && (D[d].focus || D[d].notes || D[d].mits || D[d].gratitude)) c++;
+    const {year,q}=quarter(todayISO());
+    const key = qKey(year,q);
+    setText('quarter-label', `(${qLabel(year,q)})`);
+
+    const roots = [
+      J().tri,          // { byQuarter: { 'YYYY-TQ': '...' } }
+      J().quarterly,
+      J().trimestral,
+      J()               // fallback: journal['YYYY-TQ']
+    ].filter(Boolean);
+
+    let notes='';
+    for(const r of roots){
+      if(notes) break;
+      if(r.byQuarter && r.byQuarter[key]) { notes = r.byQuarter[key]; break; }
+      if(r[key]) { notes = r[key]; break; }
     }
-    dailies7 = String(c);
-  }catch(e){}
-
-  // 3) Conteúdos agendados próximos 7 dias (estrutura tolerante)
-  let posts7 = '0';
-  try{
-    // aceitar s.content?.scheduled[date]=[items] OU s.themes?.scheduled
-    const sched = s.content?.scheduled || s.themes?.scheduled || {};
-    let c=0;
-    for(let i=0;i<7;i++){
-      const d = addDaysISO(todayISO(), i);
-      const arr = sched[d];
-      if(Array.isArray(arr)) c += arr.length;
-      else if (arr && typeof arr === 'object') c += Object.keys(arr).length;
+    if(!notes){
+      // procura chave que termine com o trimestre (ex.: “…2025-T4”)
+      const any = roots.find(r=>typeof r==='object');
+      if(any){
+        const k = Object.keys(any).find(k=>k.endsWith(key));
+        if(k) notes = any[k];
+      }
     }
-    posts7 = String(c);
-  }catch(e){}
+    setText('quarter-notes', notes || 'Sem anotações do trimestre ainda.');
+    console.log("[home-extra] trimestral", {key, notesLen: (notes||'').length});
+  }catch(e){ console.error("[home-extra] Trimestral falhou:", e); }
 
-  return {habitsPct, dailies7, posts7};
-}
+  // ========== Painel “21 dias” dos hábitos ==========
+  (function(){
+    const H=J().habits;
+    const btn=document.getElementById('btn-habits-21');
+    const panel=document.getElementById('habits-21-panel');
+    if(!btn || !panel) return;
 
-/* ---------- Trimestre atual ---------- */
-function getQuarterNotes(){
-  try{
-    const s = FOData.get();
-    const {year,q} = quarterOf(todayISO());
-    const notes = s.journal?.tri?.byQuarter?.[quarterKey(year,q)] || '';
-    return {label: quarterLabel(year,q), notes};
-  }catch(e){ return {label:'Trimestre', notes:''}; }
-}
-
-/* ---------- Habits: 21 dias ---------- */
-function build21DaysGrid(){
-  const s = FOData.get();
-  const H = s.journal?.habits;
-  if(!H || !H.items || !H.items.length) return document.createElement('div');
-
-  const wrapper = document.createElement('div');
-  H.items.forEach(h=>{
-    const id = h.id || h.key || h.title;
-    const row = document.createElement('div');
-    row.className = 'fo-habit-row';
-    row.innerHTML = `<div class="fo-habit-name">${h.title || id}</div>`;
-    const grid = document.createElement('div'); grid.className = 'fo-dots';
-    for(let i=20;i>=0;i--){
-      const d = addDaysISO(todayISO(), -i);
-      const marks = H.marks?.[d];
-      const done = marks ? (Array.isArray(marks) ? marks.includes(id) : !!marks[id]) : false;
-      const dot = document.createElement('div');
-      dot.className = 'fo-dot'+(done?' on':'');
-      dot.title = d;
-      grid.appendChild(dot);
+    if(!H?.items?.length){
+      btn.style.display='none';
+      return;
     }
-    row.appendChild(grid);
-    wrapper.appendChild(row);
-  });
-  return wrapper;
-}
 
-/* ---------- Render extras ---------- */
-function renderHomeExtras(){
-  injectStyles();
-  const container = findContainer();
-  if(!container) return;
+    function build(){
+      panel.innerHTML='';
+      H.items.forEach(h=>{
+        const id=h.id||h.key||h.title;
+        const row=document.createElement('div'); row.className='fo-habit-row';
+        const name=document.createElement('div'); name.className='fo-habit-name'; name.textContent=h.title||id;
+        const grid=document.createElement('div'); grid.className='fo-dots';
+        for(let i=20;i>=0;i--){
+          const d=addDays(todayISO(),-i), m=H.marks?.[d];
+          const on = m ? (Array.isArray(m)?m.includes(id):!!m[id]) : false;
+          const dot=document.createElement('div'); dot.className='fo-dot'+(on?' on':''); dot.title=d;
+          grid.appendChild(dot);
+        }
+        row.appendChild(name); row.appendChild(grid); panel.appendChild(row);
+      });
+    }
 
-  // 1) Progresso Geral (insere no topo)
-  const {habitsPct, dailies7, posts7} = calcKPIs();
-  const kpisCard = makeCard(`
-    <h3 class="fo-title">Progresso Geral</h3>
-    <div class="fo-kpis">
-      <div class="fo-kpi"><div class="fo-muted">Hábitos (semana)</div><strong>${habitsPct}</strong></div>
-      <div class="fo-kpi"><div class="fo-muted">Dailies (7 dias)</div><strong>${dailies7}</strong></div>
-      <div class="fo-kpi"><div class="fo-muted">Conteúdos (próx. 7 dias)</div><strong>${posts7}</strong></div>
-    </div>
-  `);
-  container.insertBefore(kpisCard, container.firstElementChild);
-
-  // 2) Visão do Trimestre (abaixo do progresso)
-  const q = getQuarterNotes();
-  const triCard = makeCard(`
-    <h3 class="fo-title">Visão do Trimestre <span class="fo-muted">(${q.label})</span></h3>
-    <div class="fo-muted" style="white-space:pre-line; margin-top:6px">${q.notes ? q.notes : 'Sem anotações do trimestre ainda.'}</div>
-    <div style="margin-top:8px"><a class="fo-link" href="./pages/quarterly/">Abrir página do Trimestral</a></div>
-  `);
-  container.insertBefore(triCard, kpisCard.nextSibling);
-
-  // 3) Botão + painel de 21 dias no bloco de Hábitos
-  const habitsSection = findHabitsSection();
-  if(habitsSection){
-    // botão
-    const btn = document.createElement('button');
-    btn.className = 'btn small';
-    btn.textContent = 'Ver 21 dias';
-    btn.style.margin = '8px 0';
-
-    // painel
-    const panel = document.createElement('div');
-    panel.style.display = 'none';
-    panel.appendChild(build21DaysGrid());
-
-    btn.onclick = ()=>{
-      const open = panel.style.display !== 'none';
-      if(open){ panel.style.display='none'; btn.textContent='Ver 21 dias'; }
-      else{ panel.innerHTML=''; panel.appendChild(build21DaysGrid()); panel.style.display='block'; btn.textContent='Ocultar'; }
+    btn.onclick=()=>{
+      const open = panel.style.display!=='none';
+      if(open){ panel.style.display='none'; btn.textContent='📈 21 dias'; }
+      else { build(); panel.style.display='block'; btn.textContent='Ocultar 21 dias'; }
     };
+  })();
 
-    // onde encaixar (no fim do card de hábitos)
-    habitsSection.appendChild(btn);
-    habitsSection.appendChild(panel);
-  }
-}
+  // “bandeirinha” de vida
+  (function(){
+    const el = document.getElementById('progress-card');
+    if(el){
+      const tag = document.createElement('div');
+      tag.className='fo-muted';
+      tag.style.fontSize='.8rem';
+      tag.style.marginTop='6px';
+      tag.textContent='scripts ok • home-extra v7';
+      el.appendChild(tag);
+    }
+  })();
 
-/* ---------- Boot ---------- */
-document.addEventListener('DOMContentLoaded', ()=>{
-  FOData.load();
-  renderHomeExtras();
-});
+})();
