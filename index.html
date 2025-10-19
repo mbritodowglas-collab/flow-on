@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="assets/css/style.css" />
   <link rel="icon" href="assets/img/favicon-32.png" />
   <style>
-    /* --- extras visuais dos novos cards --- */
+    /* --- estilos adicionais da Home --- */
     .fo-card{border:1px solid var(--border);border-radius:16px;padding:14px;margin:14px 0;background:rgba(255,255,255,.02)}
     .fo-title{font-size:1.2rem;font-weight:700;margin:0 0 8px}
     .fo-muted{opacity:.7}
@@ -87,23 +87,26 @@
     <p>Flow On © 2025 — Planeje. Execute. Evolua.</p>
   </footer>
 
-  <!-- seu JS atual da home (mantém os blocos já existentes) -->
-  <script src="assets/js/app.js"></script>
+  <!-- JS PRINCIPAL (seu app atual) -->
+  <script src="assets/js/app.js?v=8"></script>
 
-  <!-- script adicional: KPIs, Trimestral robusto e painel de 21 dias -->
+  <!-- SCRIPT EMBUTIDO: KPIs + Trimestral + 21 dias -->
   <script>
   (function(){
+    console.log("[FlowOn Home] Script ativo ✅");
+
     const KEY='flowon';
     let S={}; try{ S=JSON.parse(localStorage.getItem(KEY)||'{}'); }catch(e){S={};}
     const J=()=>{ S.journal ||= {}; return S.journal; };
 
-    // helpers
+    // ===== Helpers =====
     const toISO=d=>d.toISOString().slice(0,10);
-    const todayISO=()=>{const d=new Date(); d.setHours(0,0,0,0); return toISO(d);};
-    const addDays=(iso,n)=>{const d=new Date(iso+'T00:00:00'); d.setDate(d.getDate()+n); return toISO(d);};
-    const firstDow=(iso=todayISO())=>{const d=new Date(iso+'T00:00:00'); const k=(d.getDay()+6)%7; d.setDate(d.getDate()-k); return toISO(d);};
+    const todayISO=()=>{ const d=new Date(); d.setHours(0,0,0,0); return toISO(d); };
+    const addDays=(iso,n)=>{ const d=new Date(iso+'T00:00:00'); d.setDate(d.getDate()+n); return toISO(d); };
+    const firstDow=(iso=todayISO())=>{ const d=new Date(iso+'T00:00:00'); const k=(d.getDay()+6)%7; d.setDate(d.getDate()-k); return toISO(d); };
     const qKey=(y,q)=>`${y}-T${q}`, qLabel=(y,q)=>`T${q} de ${y}`;
-    const quarter=iso=>{const d=new Date(iso+'T00:00:00'); return {year:d.getFullYear(), q:Math.floor(d.getMonth()/3)+1};};
+    const quarter=iso=>{ const d=new Date(iso+'T00:00:00'); return {year:d.getFullYear(), q:Math.floor(d.getMonth()/3)+1}; };
+    const setText=(id,txt)=>{ const el=document.getElementById(id); if(el) el.textContent=txt; };
 
     // ===== KPIs =====
     (function(){
@@ -124,65 +127,66 @@
           }
           habitsPct = total? (Math.round(done/total*100)+'%') : '—';
         }
-      }catch(e){}
+      }catch(e){ console.warn("[FlowOn] KPI hábitos:", e); }
+
       try{
-        const D=J().daily?.byDate||{};
-        let c=0; for(let i=0;i<7;i++){ const d=addDays(todayISO(),-i); const v=D[d]; if(v&&(v.focus||v.notes||v.mits||v.gratitude)) c++; }
+        const D=J().daily?.byDate||{}; let c=0;
+        for(let i=0;i<7;i++){
+          const d=addDays(todayISO(),-i); const v=D[d];
+          if(v&&(v.focus||v.notes||v.mits||v.gratitude)) c++;
+        }
         d7=String(c);
       }catch(e){}
+
       try{
         const sched=(S.content?.scheduled)||(S.themes?.scheduled)||{};
-        let c=0; for(let i=0;i<7;i++){ const d=addDays(todayISO(),i); const a=sched[d]; if(Array.isArray(a)) c+=a.length; else if(a&&typeof a==='object') c+=Object.keys(a).length; }
+        let c=0;
+        for(let i=0;i<7;i++){
+          const d=addDays(todayISO(),i);
+          const a=sched[d];
+          if(Array.isArray(a)) c+=a.length;
+          else if(a&&typeof a==='object') c+=Object.keys(a).length;
+        }
         posts7=String(c);
       }catch(e){}
-      (document.getElementById('kpi-habits')||{}).textContent = habitsPct;
-      (document.getElementById('kpi-dailies')||{}).textContent = d7;
-      (document.getElementById('kpi-posts')||{}).textContent = posts7;
+      setText('kpi-habits',habitsPct);
+      setText('kpi-dailies',d7);
+      setText('kpi-posts',posts7);
     })();
 
-    // ===== Visão do Trimestre (lê várias estruturas possíveis) =====
+    // ===== Trimestral =====
     (function(){
       const {year,q}=quarter(todayISO());
-      const key = qKey(year,q);
-      const lbl = document.getElementById('quarter-label');
-      const out = document.getElementById('quarter-notes');
-      if(lbl) lbl.textContent = `(${qLabel(year,q)})`;
+      const key=qKey(year,q);
+      setText('quarter-label',`(${qLabel(year,q)})`);
 
-      const roots = [
-        J().tri,          // { byQuarter: { 'YYYY-TQ': '...' } }
-        J().quarterly,
-        J().trimestral,
-        J()               // fallback: journal['YYYY-TQ']
+      const roots=[
+        J().tri, J().quarterly, J().trimestral, J()
       ].filter(Boolean);
 
       let notes='';
       for(const r of roots){
         if(notes) break;
-        if(r.byQuarter && r.byQuarter[key]) { notes = r.byQuarter[key]; break; }
-        if(r[key]) { notes = r[key]; break; }
+        if(r.byQuarter && r.byQuarter[key]) { notes=r.byQuarter[key]; break; }
+        if(r[key]) { notes=r[key]; break; }
       }
       if(!notes){
-        const anyRoot = roots.find(r=>typeof r==='object');
-        if(anyRoot){
-          const k = Object.keys(anyRoot).find(k=>k.endsWith(key));
-          if(k) notes = anyRoot[k];
+        const any=roots.find(r=>typeof r==='object');
+        if(any){
+          const k=Object.keys(any).find(k=>k.endsWith(key));
+          if(k) notes=any[k];
         }
       }
-      if(out) out.textContent = notes || 'Sem anotações do trimestre ainda.';
+      setText('quarter-notes',notes||'Sem anotações do trimestre ainda.');
     })();
 
-    // ===== Hábitos — painel "📈 21 dias" =====
+    // ===== Painel 21 dias =====
     (function(){
       const H=J().habits;
       const btn=document.getElementById('btn-habits-21');
       const panel=document.getElementById('habits-21-panel');
-
-      if(!btn || !panel) return;
-
-      if(!H?.items?.length){
-        btn.style.display='none';
-        return;
-      }
+      if(!btn||!panel)return;
+      if(!H?.items?.length){btn.style.display='none';return;}
 
       function build(){
         panel.innerHTML='';
@@ -193,7 +197,7 @@
           const grid=document.createElement('div'); grid.className='fo-dots';
           for(let i=20;i>=0;i--){
             const d=addDays(todayISO(),-i), m=H.marks?.[d];
-            const on = m ? (Array.isArray(m)?m.includes(id):!!m[id]) : false;
+            const on=m?(Array.isArray(m)?m.includes(id):!!m[id]):false;
             const dot=document.createElement('div'); dot.className='fo-dot'+(on?' on':''); dot.title=d;
             grid.appendChild(dot);
           }
@@ -202,11 +206,12 @@
       }
 
       btn.onclick=()=>{
-        const open = panel.style.display!=='none';
-        if(open){ panel.style.display='none'; btn.textContent='📈 21 dias'; }
-        else { build(); panel.style.display='block'; btn.textContent='Ocultar 21 dias'; }
+        const open=panel.style.display!=='none';
+        if(open){panel.style.display='none'; btn.textContent='📈 21 dias';}
+        else {build(); panel.style.display='block'; btn.textContent='Ocultar 21 dias';}
       };
     })();
+
   })();
   </script>
 </body>
