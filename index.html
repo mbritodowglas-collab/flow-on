@@ -5,13 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Flow On — Sua Rotina em Movimento</title>
 
-  <!-- CSS -->
   <link rel="stylesheet" href="assets/css/style.css" />
+  <link rel="icon" href="assets/img/favicon-32.png" />
 
-  <!-- FAVICONS (SVG + fallback PNG) -->
-  <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml" />
-  <link rel="icon" href="assets/img/favicon-32.png" sizes="32x32" type="image/png" />
-  <link rel="apple-touch-icon" href="assets/img/icons/icon-192.png" />
+  <!-- PWA (mínimo, não mexe em cache) -->
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <meta name="theme-color" content="#0b0d10" />
 
   <style>
     /* --- extras suaves para os novos cards --- */
@@ -144,13 +143,9 @@
 
     // ------- Fonte única de hábitos (prefere onde a página de Hábitos grava) -------
     function getHabits(){
-      // 1) página Hábitos nova costuma gravar em flowon -> journal.habits.items
       if (Array.isArray(SOLD?.journal?.habits?.items) && SOLD.journal.habits.items.length) return SOLD.journal.habits.items;
-      // 2) algumas versões antigas gravavam em flowon -> habits
       if (Array.isArray(SOLD?.habits) && SOLD.habits.length) return SOLD.habits;
-      // 3) se você já migrou para v2 e grava lá dentro de journal.habits
       if (Array.isArray(S?.journal?.habits?.items) && S.journal.habits.items.length) return S.journal.habits.items;
-      // 4) fallback (v2 raiz)
       if (Array.isArray(S?.habits) && S.habits.length) return S.habits;
       return [];
     }
@@ -356,6 +351,15 @@
 
   });
   </script>
-  <!-- =========== FIM DO JS EMBUTIDO =========== -->
+
+  <!-- Registro do Service Worker (neutro; não faz cache) -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./service-worker.js', { scope: './' })
+          .catch(err => console.warn('[PWA] SW error:', err));
+      });
+    }
+  </script>
 </body>
 </html>
