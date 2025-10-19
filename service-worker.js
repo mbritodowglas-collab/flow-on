@@ -1,63 +1,92 @@
-/* Flow On — Service Worker (PWA) */
-const CACHE_NAME = 'flowon-cache-v1';
-const ASSETS = [
-  '/', '/index.html',
-  '/assets/css/style.css',
-  '/assets/js/app.js',
-  '/assets/img/logo.svg',
-  '/manifest.webmanifest'
+/* Flow On — SW minimalista e seguro para evitar dessincronização */
+const VERSION = 'v3'; // aumente quando atualizar o SW
+const STATIC_CACHE = `flowon-static-${VERSION}`;
+
+/* Cache apenas ícones/imagens estáticas leves.
+   NÃO cacheamos HTML. JS e CSS serão network-first. */
+const PRECACHE_URLS = [
+  // coloque apenas arquivos que quase nunca mudam
+  '/assets/img/icons/icon-192.png',
+  '/assets/img/icons/icon-512.png',
+  '/assets/img/favicon-32.png'
 ];
 
-// Instalação: pré-cache básico
 self.addEventListener('install', (event) => {
-  self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS).catch(()=>null))
+    caches.open(STATIC_CACHE).then((cache) => cache.addAll(PRECACHE_URLS))
   );
+  self.skipWaiting();
 });
 
-// Ativação: limpa caches antigos
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.map((k) => (k !== CACHE_NAME ? caches.delete(k) : null)))
-    ).then(() => self.clients.claim())
+      Promise.all(keys.map((k) => (k !== STATIC_CACHE ? caches.delete(k) : null)))
+    )
   );
+  self.clients.claim();
 });
 
-// Estratégia: 
-// - Assets: cache-first
-// - Páginas/HTML: network-first com fallback do cache
+/* Estratégias:
+   - Navegação (HTML): SEMPRE network-first (para pegar o index/ páginas mais novas).
+   - JS e CSS: network-first (para evitar rodar lógica antiga).
+   - Imagens/ícones: cache-first (rápido e seguro).
+*/
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   const url = new URL(req.url);
 
-  // só controla requisições GET
-  if (req.method !== 'GET') return;
+  // Só controla requisições do mesmo escopo
+  if (url.origin !== location.origin) return;
 
-  // HTML → network-first
-  if (req.headers.get('accept')?.includes('text/html')) {
+  // Navegação (HTML)
+  if (req.mode === 'navigate' || req.destination === 'document') {
     event.respondWith(
-      fetch(req)
-        .then((res) => {
-          const resClone = res.clone();
-          caches.open(CACHE_NAME).then((c) => c.put(req, resClone));
-          return res;
-        })
-        .catch(() => caches.match(req).then((c) => c || caches.match('/index.html')))
+      fetch(req).catch(() => caches.match('/index.html'))
     );
     return;
   }
 
-  // Demais (CSS, JS, IMG) → cache-first
+  // JS e CSS -> Network-first
+  if (req.destination === 'script' || req.destination === 'style') {
+    event.respondWith(
+      fetch(req)
+        .then((res) => {
+          const resClone = res.clone();
+          caches.open(STATIC_CACHE).then((c) => c.put(req, resClone));
+          return res;
+        })
+        .catch(() => caches.match(req))
+    );
+    return;
+  }
+
+  // Imagens/ícones -> Cache-first
+  if (req.destination === 'image' || req.destination === 'icon') {
+    event.respondWith(
+      caches.match(req).then((cached) =>
+        cached ||
+        fetch(req).then((res) => {
+          const resClone = res.clone();
+          caches.open(STATIC_CACHE).then((c) => c.put(req, resClone));
+          return res;
+        })
+      )
+    );
+    return;
+  }
+
+  // Demais arquivos: tenta rede, cai para cache se existir
   event.respondWith(
-    caches.match(req).then((cached) =>
-      cached ||
-      fetch(req).then((res) => {
-        const resClone = res.clone();
-        caches.open(CACHE_NAME).then((c) => c.put(req, resClone));
-        return res;
-      }).catch(() => cached)
-    )
+    fetch(req)
+      .then((res) => res)
+      .catch(() => caches.match(req))
   );
+});
+
+/* Atualização imediata quando houver SW novo */
+self.addEventListener('message', (event) => {
+  if (event.data === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
