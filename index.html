@@ -168,54 +168,247 @@
 
   <script>
   document.addEventListener('DOMContentLoaded', function(){
+    /* ===== Estados ===== */
     const KEY_V2='flowon.v2';
     const KEY_OLD='flowon';
     let S={}, SOLD={};
     try{ S=JSON.parse(localStorage.getItem(KEY_V2)||'{}'); }catch(e){S={};}
     try{ SOLD=JSON.parse(localStorage.getItem(KEY_OLD)||'{}'); }catch(e){SOLD={};}
 
+    /* ===== Datas ===== */
     const toISO=d=>d.toISOString().slice(0,10);
     const todayISO=()=>{const d=new Date();d.setHours(0,0,0,0);return toISO(d);};
     const addDays=(iso,n)=>{const d=new Date(iso+'T00:00:00');d.setDate(d.getDate()+n);return toISO(d);};
     const parseLocal=iso=>{const [y,m,d]=(iso||'').split('-').map(Number);return new Date(y,(m||1)-1,d||1);};
     const mondayOfWeekISO=iso=>{const d=parseLocal(iso);const off=(d.getDay()+6)%7;d.setDate(d.getDate()-off);return toISO(d);};
     const weekRangeFromISO=iso=>{const mon=mondayOfWeekISO(iso);return[...Array(7)].map((_,i)=>addDays(mon,i));};
+    const weekKeyOfISO=iso=>{const d=parseLocal(iso);const onejan=new Date(d.getFullYear(),0,1);const day=Math.floor((d-onejan)/86400000)+1;const wk=Math.ceil((day+((onejan.getDay()+6)%7))/7);return `${d.getFullYear()}-W${String(wk).padStart(2,'0')}`;};
+    const dayIndexOfISO=iso=>{const d=parseLocal(iso);return (d.getDay()+6)%7;};
 
+    /* ===== Hábitos: fonte/forma iguais à página de Hábitos ===== */
     const getHabitsData=()=>{
-      const H=SOLD?.journal?.habits||{};return{
+      // espelha a página de hábitos (journal.habits.items + marks)
+      const H=SOLD?.journal?.habits||{};
+      return{
         items:Array.isArray(H.items)?H.items:[],
         marks:(H.marks&&typeof H.marks==='object')?H.marks:{}
       };
     };
     const getMarkFor=(marks,iso,id)=>{
-      const m=marks[iso];if(!m)return undefined;
-      if(Array.isArray(m))return m.includes(id)?1:0;
-      if(typeof m==='object')return(m[id]===1)?1:(m[id]===0?0:undefined);
+      const m=marks[iso]; if(!m) return undefined;
+      if(Array.isArray(m)) return m.includes(id)?1:0;
+      if(typeof m==='object') return (m[id]===1)?1:(m[id]===0?0:undefined);
+      return undefined;
     };
 
+    /* ===== KPIs (Progresso Geral) ===== */
+    (function renderProgress(){
+      const {items,marks}=getHabitsData();
+      const weekDays=weekRangeFromISO(todayISO());
+
+      // hábitos (% da semana)
+      let done=0,total=0;
+      items.forEach(h=>{
+        const id=h.id||h.key||h.title;
+        weekDays.forEach(iso=>{
+          total += 1;
+          if(getMarkFor(marks,iso,id)===1) done += 1;
+        });
+      });
+      const habitsPct = total ? Math.round(done/total*100)+'%' : '—';
+
+      // dailies 7 dias (v2 array OU legado byDate)
+      let d7 = 0;
+      const past7 = [...Array(7)].map((_,i)=> addDays(todayISO(), -i));
+      const dailyArr    = S.journal?.daily;
+      const dailyByDate = SOLD?.journal?.daily?.byDate;
+      if (Array.isArray(dailyArr)) {
+        d7 = dailyArr.filter(r=> r?.date && past7.includes(r.date) && (r.focus||r.notes||r.mits||r.gratitude)).length;
+      } else if (dailyByDate && typeof dailyByDate==='object') {
+        d7 = past7.filter(d=> {
+          const v = dailyByDate[d];
+          return v && (v.focus||v.notes||v.mits||v.gratitude);
+        }).length;
+      }
+
+      // conteúdos próximos 7 dias (v2)
+      let posts7 = 0;
+      for(let i=0;i<7;i++){
+        const d=addDays(todayISO(), i);
+        const arr=(S.posts||[]).filter(p=>!p.archived && p.status!=='Rascunho' && p.date===d);
+        posts7 += arr.length;
+      }
+
+      const elH=document.getElementById('kpi-habits');
+      const elD=document.getElementById('kpi-dailies');
+      const elP=document.getElementById('kpi-posts');
+      if(elH) elH.textContent=habitsPct;
+      if(elD) elD.textContent=String(d7);
+      if(elP) elP.textContent=String(posts7);
+    })();
+
+    /* ===== Trimestre ===== */
+    (function renderQuarter(){
+      const d = parseLocal(todayISO());
+      const y = d.getFullYear();
+      const q = Math.floor(d.getMonth()/3)+1;
+      const key = `${y}-T${q}`;
+      const label = `T${q} de ${y}`;
+      const lab = document.getElementById('quarter-label');
+      if(lab) lab.textContent=`(${label})`;
+
+      let notes = S.journal?.tri?.byQuarter?.[key] || '';
+      if(!notes){
+        const J = SOLD.journal || {};
+        const roots = [ J.tri, J.quarterly, J.trimestral, J ];
+        for(const r of roots){
+          if(!r) continue;
+          if(r.byQuarter && r.byQuarter[key]) { notes = r.byQuarter[key]; break; }
+          if(r[key]) { notes = r[key]; break; }
+        }
+      }
+      const el = document.getElementById('quarter-notes');
+      if(el) el.textContent = notes || 'Sem anotações do trimestre ainda.';
+    })();
+
+    /* ===== Hábitos (semana) — espelho da página de Hábitos ===== */
     (function renderHabitsSummary(){
       const el=document.getElementById('habits-summary');
       if(!el)return;
       const{items,marks}=getHabitsData();
       const weekDays=weekRangeFromISO(todayISO());
       const today=todayISO();
-      if(!items.length){el.innerHTML=`<div class="muted">Sem hábitos cadastrados. Edite em <b>Journal → Hábitos</b>.</div>`;return;}
+
+      if(!items.length){
+        el.innerHTML=`<div class="muted">Sem hábitos cadastrados. Edite em <b>Journal → Hábitos</b>.</div>`;
+        return;
+      }
+
       let html='';
       items.forEach(h=>{
         const id=h.id||h.key||h.title;
         const dots=weekDays.map(iso=>{
           const v=getMarkFor(marks,iso,id);
           let cls='ring-dot';
-          if(v===1)cls+=' done';
-          else if(v===0&&iso<today)cls+=' miss';
+          if(v===1) cls+=' done';
+          else if(v===0 && iso<today) cls+=' miss';
           return `<span class="${cls}" title="${iso}"></span>`;
         }).join('');
         const ones=weekDays.reduce((a,iso)=>a+(getMarkFor(marks,iso,id)===1?1:0),0);
-        const pct=Math.round((ones/7)*100);
-        html+=`<div class="h-row"><div class="h-name">${h.title||h.name||'Hábito'}</div><div class="h-dots">${dots}<div class="h-pct">${pct}%</div></div></div>`;
+        const pct=Math.round((ones/7)*100)||0;
+        html+=`<div class="h-row">
+          <div class="h-name">${h.title||h.name||'Hábito'}</div>
+          <div class="h-dots">${dots}<div class="h-pct">${pct}%</div></div>
+        </div>`;
       });
       el.innerHTML=html+`<div class="muted" style="margin-top:6px">* visão geral — edite em Journal → Hábitos</div>`;
     })();
+
+    /* ===== 21 dias (espelho) ===== */
+    (function setupHabits21(){
+      const btn=document.getElementById('btn-habits-21');
+      const panel=document.getElementById('habits-21-panel');
+      if(!btn||!panel)return;
+
+      const {items,marks}=getHabitsData();
+      if(!items.length){btn.style.display='none';return;}
+
+      const days=[...Array(21)].map((_,i)=>addDays(todayISO(),-(20-i)));
+
+      function build(){
+        panel.innerHTML='';
+        items.forEach(h=>{
+          const id=h.id||h.key||h.title;
+          const row=document.createElement('div');row.className='fo-habit-row';
+          row.innerHTML=`<div class="fo-habit-name">${h.title||h.name||'Hábito'}</div>`;
+          const grid=document.createElement('div');grid.className='fo-dots';
+          days.forEach(iso=>{
+            const v=getMarkFor(marks,iso,id);
+            const dot=document.createElement('div');
+            dot.className='fo-dot'+(v===1?' on':'');
+            dot.title=iso;
+            grid.appendChild(dot);
+          });
+          row.appendChild(grid);panel.appendChild(row);
+        });
+      }
+
+      btn.addEventListener('click',()=>{
+        const open=panel.style.display==='block';
+        if(open){panel.style.display='none';btn.textContent='📈 21 dias';}
+        else{build();panel.style.display='block';btn.textContent='Ocultar 21 dias';}
+      });
+    })();
+
+    /* ===== Agenda de Conteúdo (v2) ===== */
+    (function renderContentSummary(){
+      const el = document.getElementById('content-summary');
+      if(!el) return;
+      const dates = weekRangeFromISO(todayISO());
+      const today = todayISO();
+
+      const statusBadge = (dateStr, status)=>{
+        if(status==='Agendado'){
+          if(dateStr < today) return `<span class="badge" style="background:#321; border-color:#633; color:#f8d7da">Atrasado</span>`;
+          if(dateStr === today) return `<span class="badge" style="background:#332b00; border-color:#806b00; color:#ffec99">Pendente</span>`;
+          return `<span class="badge" style="background:#102915; border-color:#1f6f34; color:#b7ffd1">Agendado</span>`;
+        }
+        if(status==='Publicado') return `<span class="badge" style="background:#0e2a3a; border-color:#1f5168; color:#a8e1ff">Publicado</span>`;
+        return '';
+      };
+
+      let html = '';
+      dates.forEach(d=>{
+        const items = (S.posts||[]).filter(p=> !p.archived && p.status!=='Rascunho' && p.date === d);
+        const list = items.length
+          ? items.map(p=>{
+              const theme = (S.themes||[]).find(t=>t.id===p.themeId);
+              const labelMap = {yt_long:'YouTube',short:'Reels/TikTok',carousel:'Carrossel',static:'Imagem',blog:'Blog'};
+              const label = labelMap[p.type] || p.type || 'Post';
+              return `<div class="small badge" style="display:flex; align-items:center; gap:6px; margin:2px 4px 0 0">
+                <span>${theme?.title||'—'} • ${label}</span>${statusBadge(p.date, p.status)}
+              </div>`;
+            }).join('')
+          : `<span class="muted">Sem itens</span>`;
+
+        const display = parseLocal(d).toLocaleDateString('pt-BR',{weekday:'short', day:'2-digit'});
+        html += `<div class="list-day"><div class="list-day-head">
+            <span>${display}</span><span class="muted">semana</span></div><div>${list}</div></div>`;
+      });
+      el.innerHTML = html;
+    })();
+
+    /* ===== Resumo do Journal (Monthly) ===== */
+    (function renderJournalSummary(){
+      const el = document.getElementById('journal-summary');
+      if(!el) return;
+      const dates = weekRangeFromISO(todayISO());
+      const items = (S.journal?.month?.items || []).filter(it=> !it.archived);
+
+      let html = '';
+      dates.forEach(d=>{
+        const dayItems = items.filter(it=> it.date === d);
+        const list = dayItems.length
+          ? dayItems.map(it=>{
+              const badge = it.done
+                ? `<span class="badge" style="background:#0e2a3a; border-color:#1f5168; color:#a8e1ff">Concluído</span>`
+                : `<span class="badge" style="background:#332b00; border-color:#806b00; color:#ffec99">Pendente</span>`;
+              return `<div class="small badge" style="display:flex; align-items:center; gap:6px; margin:2px 4px 0 0">
+                  <span>${it.title}</span>${badge}
+                </div>`;
+            }).join('')
+          : `<span class="muted">Sem itens</span>`;
+
+        const display = parseLocal(d).toLocaleDateString('pt-BR',{weekday:'short', day:'2-digit'});
+        html += `<div class="list-day j-card">
+            <div class="list-day-head"><span class="small" style="opacity:.8">${display}</span>
+            <span class="muted">agenda</span></div>
+            <div>${list}</div>
+          </div>`;
+      });
+      el.innerHTML = html;
+    })();
+
   });
   </script>
 
