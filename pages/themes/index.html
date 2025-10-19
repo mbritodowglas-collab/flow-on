@@ -39,7 +39,7 @@
 
     <section class="card">
       <div class="card-head">
-        <h2>Publicação (semana)</h2>
+        <h2>Planejamento (próximos 30 dias)</h2>
         <button id="btnNewTheme" class="btn">+ Novo Tema</button>
       </div>
       <div id="weekPub"></div>
@@ -50,7 +50,7 @@
     <p>Flow On © 2025 — Planeje. Execute. Evolua.</p>
   </footer>
 
-  <!-- Modal simples -->
+  <!-- Modal de edição/criação -->
   <dialog id="modalTheme" class="modal">
     <form method="dialog" class="modal-box">
       <div class="card-head" style="margin-bottom:8px">
@@ -65,27 +65,26 @@
           <input id="fPersona" />
           <label>Objetivo/CTA</label>
           <input id="fObjetivo" />
-          <label>Datas</label>
-          <div class="grid-2">
-            <input id="dGravacao" type="date" />
-            <input id="dPublicacao" type="date" />
-          </div>
+
+          <!-- UMA ÚNICA DATA -->
+          <label>Data de publicação</label>
+          <input id="dPublicacao" type="date" />
+
           <label>Plataformas</label>
           <div class="small">
             <label><input type="checkbox" id="pYT"> YouTube</label> ·
             <label><input type="checkbox" id="pIG"> Instagram</label> ·
             <label><input type="checkbox" id="pBlog"> Blog</label>
           </div>
-          <label>Status</label>
-          <select id="fStatus">
-            <option>Ideia</option>
+
+          <label>Status (auto)</label>
+          <select id="fStatus" disabled>
             <option>Rascunho</option>
-            <option>Em gravação</option>
-            <option>Em edição</option>
             <option>Agendado</option>
-            <option>Publicado</option>
           </select>
+          <div class="muted small">* Sem data = Rascunho • Com data = Agendado</div>
         </div>
+
         <div class="form">
           <label>Roteiro — YouTube</label>
           <textarea id="rYT" rows="6" placeholder="Título, thumb, intro 30s, tópicos, CTA"></textarea>
@@ -93,6 +92,7 @@
           <textarea id="rReels" rows="6" placeholder="Hook, micro-roteiro, CTA"></textarea>
         </div>
       </div>
+
       <div class="muted" id="themeIdInfo" style="margin-top:8px"></div>
       <div style="margin-top:10px">
         <button id="btnSaveTheme" class="btn">Salvar</button>
