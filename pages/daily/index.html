@@ -21,6 +21,7 @@
 <main class="container">
   <section class="card" id="tab-daily">
     <h2>Daily Log</h2>
+
     <div class="form" style="max-width:800px">
       <label>Data</label>
       <select id="dailyDate"></select>
@@ -40,27 +41,34 @@
       <label>Notas / Reflexão</label>
       <textarea id="dailyNotes" rows="6" placeholder="Anotações do dia"></textarea>
 
-      <div style="margin-top:8px">
-        <button id="btnSaveDaily" class="btn">Salvar Daily</button>
+      <div style="margin-top:8px; display:flex; gap:10px; flex-wrap:wrap">
+        <button id="btnSaveDaily" class="btn">💾 Salvar Daily</button>
+        <button id="btnDeleteDaily" class="btn danger">🗑️ Excluir dia</button>
       </div>
     </div>
+
+    <hr style="margin:20px 0; border-color:var(--border); opacity:0.3" />
 
     <div style="display:flex; align-items:center; gap:10px; margin-top:6px; flex-wrap:wrap">
       <h3 style="margin:0">Últimos registros</h3>
       <button id="btnToggleDailyMonth" class="btn small">Ver todos do mês</button>
     </div>
-    <div id="dailyRecent"></div>
 
-    <div id="dailyMonth" style="display:none;">
+    <div id="dailyRecent" style="margin-top:10px"></div>
+
+    <div id="dailyMonth" style="display:none; margin-top:15px;">
       <h3 class="muted" style="margin:6px 0 8px">Registros do mês atual</h3>
       <div id="dailyMonthList"></div>
     </div>
   </section>
 </main>
 
-<footer class="footer"><p>Flow On © 2025 — Planeje. Execute. Evolua.</p></footer>
+<footer class="footer">
+  <p>Flow On © 2025 — Planeje. Execute. Evolua.</p>
+</footer>
 
+<!-- Core e lógica -->
 <script src="../../assets/js/core.js?v=1"></script>
-<script src="../../assets/js/daily.js?v=1"></script>
+<script src="../../assets/js/daily.js?v=2"></script>
 </body>
 </html>
