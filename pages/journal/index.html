@@ -6,14 +6,46 @@
   <title>Flow On — Journal</title>
   <link rel="stylesheet" href="../../assets/css/style.css" />
   <style>
-    .menu-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:12px}
-    .menu-grid a{display:block;text-align:center}
+    /* --- estilos só desta página --- */
+    .hub-wrap{max-width:900px;margin:0 auto}
+    .tiles{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+      gap:16px;
+      margin-top:16px;
+    }
+    .tile{
+      display:flex; align-items:center; justify-content:center; flex-direction:column;
+      gap:10px; padding:18px 16px; border-radius:16px;
+      background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.03));
+      border:1px solid rgba(255,255,255,.08);
+      box-shadow:0 6px 20px rgba(0,0,0,.25);
+      transition:transform .12s ease, box-shadow .12s ease, border-color .12s ease;
+      text-decoration:none; color:inherit;
+    }
+    .tile:active{transform:translateY(1px) scale(.99)}
+    .tile:hover{box-shadow:0 10px 26px rgba(0,0,0,.35); border-color:rgba(255,255,255,.18)}
+    .tile .emoji{
+      font-size:28px; line-height:1; padding:10px; border-radius:12px;
+      background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.08);
+      width:56px; height:56px; display:flex; align-items:center; justify-content:center;
+    }
+    .tile .label{font-weight:600; letter-spacing:.2px}
+    .tile small{opacity:.65}
+    /* cores sutis por módulo */
+    .tile.habitos   {background:linear-gradient(180deg, rgba(87,201,114,.12), rgba(87,201,114,.06))}
+    .tile.daily     {background:linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03))}
+    .tile.monthly   {background:linear-gradient(180deg, rgba(124,166,255,.12), rgba(124,166,255,.05))}
+    .tile.tri       {background:linear-gradient(180deg, rgba(255,163,102,.14), rgba(255,163,102,.06))}
+    /* topo global */
+    .top-menu{display:flex; gap:10px; flex-wrap:wrap}
+    .top-menu a{display:inline-flex; align-items:center; gap:6px}
   </style>
 </head>
 <body>
   <header class="navbar">
     <div class="nav-inner">
-      <nav class="menu">
+      <nav class="menu top-menu">
         <a href="../../index.html">🏠 Home</a>
         <a href="../themes/">🎬 Temas</a>
         <a href="../reports/">📊 Relatórios</a>
@@ -22,17 +54,35 @@
     </div>
   </header>
 
-  <main class="container">
+  <main class="container hub-wrap">
     <section class="card" style="text-align:center">
       <h1>Flow On — Journal</h1>
-      <p>Selecione um módulo:</p>
+      <p class="muted">Selecione um módulo:</p>
 
-      <!-- LINKS PUROS (sem JS) -->
-      <div class="menu-grid">
-        <a class="btn big" href="../habits/">✅ Hábitos</a>
-        <a class="btn big" href="../daily/">🗒️ Daily</a>
-        <a class="btn big" href="../monthly/">🗓️ Monthly</a>
-        <a class="btn big" href="../quarterly/">📆 Trimestral</a>
+      <div class="tiles">
+        <a class="tile habitos" href="../habits/">
+          <div class="emoji">✅</div>
+          <div class="label">Hábitos</div>
+          <small>Rastreador diário</small>
+        </a>
+
+        <a class="tile daily" href="../daily/">
+          <div class="emoji">🗒️</div>
+          <div class="label">Daily</div>
+          <small>Foco, MITs, gratidão</small>
+        </a>
+
+        <a class="tile monthly" href="../monthly/">
+          <div class="emoji">🗓️</div>
+          <div class="label">Monthly</div>
+          <small>Agenda do mês</small>
+        </a>
+
+        <a class="tile tri" href="../quarterly/">
+          <div class="emoji">📆</div>
+          <div class="label">Trimestral</div>
+          <small>Metas & ajustes (90d)</small>
+        </a>
       </div>
     </section>
   </main>
