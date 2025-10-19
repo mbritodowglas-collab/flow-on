@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Flow On — Editor de Post</title>
+  <link rel="stylesheet" href="../../assets/css/style.css" />
+  <link rel="icon" href="../../assets/img/favicon-32.png" />
+</head>
+<body>
+  <header class="navbar">
+    <div class="nav-inner">
+      <div class="logo">
+        <img src="../../assets/img/logo.svg" alt="Flow On logo" />
+        <span>Flow On</span>
+      </div>
+      <nav class="menu">
+        <a href="../../index.html">🏠 Home</a>
+        <a href="./">🎬 Temas</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container container--single">
+    <section class="card">
+      <h2>Editor de Post</h2>
+
+      <div class="grid-2">
+        <div class="form">
+          <label>Tema</label>
+          <input id="eThemeTitle" disabled />
+
+          <label>Destino</label>
+          <select id="eType">
+            <option value="yt_long">YouTube (vídeo longo)</option>
+            <option value="short">Reels / TikTok (vídeo curto)</option>
+            <option value="carousel">Carrossel</option>
+            <option value="static">Imagem estática</option>
+            <option value="blog">Blog</option>
+          </select>
+
+          <label>Data de publicação</label>
+          <input id="eDate" type="date" />
+        </div>
+
+        <div class="form">
+          <label>Roteiro / Notas</label>
+          <textarea id="eScript" rows="10" placeholder="Estrutura do roteiro, CTA, thumb/arte, tópicos, etc."></textarea>
+        </div>
+      </div>
+
+      <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap">
+        <button id="btnSavePost" class="btn">Salvar</button>
+        <button id="btnDeletePost" class="btn">Excluir</button>
+      </div>
+
+      <div class="muted small" style="margin-top:8px">
+        * Sem data = <b>Rascunho</b> • Com data = <b>Agendado</b>. Ao publicar, marque “OK publicado” no calendário.
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>Flow On © 2025 — Planeje. Execute. Evolua.</p>
+  </footer>
+
+  <!-- importante: caminho relativo a partir de /pages/themes/ -->
+  <script src="../../assets/js/editor.js?v=1"></script>
+</body>
+</html>
