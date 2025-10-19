@@ -4,8 +4,18 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Flow On — Configurações</title>
+
+  <!-- CSS -->
   <link rel="stylesheet" href="../../assets/css/style.css" />
-  <link rel="icon" href="../../assets/img/favicon-32.png" />
+
+  <!-- FAVICONS (SVG + fallback PNG) -->
+  <link rel="icon" href="../../assets/img/favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="../../assets/img/favicon-32.png" sizes="32x32" type="image/png" />
+  <link rel="apple-touch-icon" href="../../assets/img/icons/icon-192.png" />
+
+  <!-- PWA mínimo (não mexe em cache, só permite instalar) -->
+  <link rel="manifest" href="../../manifest.webmanifest" />
+  <meta name="theme-color" content="#0b0d10" />
 </head>
 <body>
   <header class="navbar">
@@ -70,6 +80,17 @@
     <p>Flow On © 2025 — Planeje. Execute. Evolua.</p>
   </footer>
 
+  <!-- Settings com compat v2 + legacy -->
   <script src="../../assets/js/settings.js"></script>
+
+  <!-- Registro do Service Worker (neutro; não faz cache por conta própria) -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('../../service-worker.js', { scope: '../../' })
+          .catch(err => console.warn('[PWA] SW error:', err));
+      });
+    }
+  </script>
 </body>
 </html>
