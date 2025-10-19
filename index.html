@@ -178,7 +178,7 @@
     <p>Flow On © 2025 — Planeje. Execute. Evolua.</p>
   </footer>
 
-  <!-- ============ JS EMBUTIDO (sincronizado com a página Hábitos) ============ -->
+  <!-- ============ JS EMBUTIDO (compat com vários formatos de storage) ============ -->
   <script>
   document.addEventListener('DOMContentLoaded', function(){
     /* ===== Carrega estados (v2 e legado) ===== */
@@ -212,29 +212,61 @@
     }
     function dayIndexOfISO(iso){ const d=parseLocal(iso); return (d.getDay()+6)%7; }
 
-    // ------- Fonte única de hábitos -------
+    /* ===== Normalizadores de dados ===== */
+    const isOn = v => v===true || v===1 || v==='1' || v==='true' || v==='on' || v==='✔' || v==='✓';
     function getHabits(){
+      // tenta várias raízes conhecidas
       if (Array.isArray(SOLD?.journal?.habits?.items) && SOLD.journal.habits.items.length) return SOLD.journal.habits.items;
       if (Array.isArray(SOLD?.habits) && SOLD.habits.length) return SOLD.habits;
       if (Array.isArray(S?.journal?.habits?.items) && S.journal.habits.items.length) return S.journal.habits.items;
       if (Array.isArray(S?.habits) && S.habits.length) return S.habits;
       return [];
     }
+    // retorna se há check em um dia ISO para um hábito em QUALQUER esquema
+    function getCheck(h, iso){
+      const wk  = weekKeyOfISO(iso);
+      const idx = dayIndexOfISO(iso);
 
-    // ------- Progresso Geral -------
+      // 1) esquema por semana: checks[weekKey] => array[7] ou objeto {0..6}
+      const cw = h?.checks?.[wk];
+      if (Array.isArray(cw)) return isOn(cw[idx]);
+      if (cw && typeof cw==='object') return isOn(cw[idx] ?? cw[String(idx)]);
+
+      // 2) esquema por data direta
+      if (h?.byDate && typeof h.byDate==='object') return isOn(h.byDate[iso]);
+      if (h?.checks?.byDate && typeof h.checks.byDate==='object') return isOn(h.checks.byDate[iso]);
+      if (h?.progress && typeof h.progress==='object') return isOn(h.progress[iso]);
+
+      // 3) fallback: array flat recente (7 últimos)
+      if (Array.isArray(h?.checks)) {
+        // assume que é a semana atual
+        return isOn(h.checks[idx]);
+      }
+      return false;
+    }
+
+    // constrói série de 21 dias para o painel, independente do esquema
+    function series21(h){
+      // últimos 21 dias até hoje
+      const today = todayISO();
+      const arr = [];
+      for(let i=20;i>=0;i--){
+        const iso = addDays(today, -i);
+        arr.push(getCheck(h, iso));
+      }
+      return arr;
+    }
+
+    /* ===== Progresso Geral ===== */
     (function renderProgress(){
       const habits = getHabits();
       const weekDays = weekRangeFromISO(todayISO());
       let done=0,total=0;
 
       habits.forEach(h=>{
-        h.checks ||= {};
         weekDays.forEach(iso=>{
-          const wk = weekKeyOfISO(iso);
-          const idx= dayIndexOfISO(iso);
-          const arr = (h.checks[wk] ||= Array(7).fill(false));
           total += 1;
-          if (arr[idx]) done += 1;
+          if (getCheck(h, iso)) done += 1;
         });
       });
       const habitsPct = total ? Math.round(done/total*100)+'%' : '—';
@@ -266,7 +298,7 @@
       document.getElementById('kpi-posts').textContent   = String(posts7);
     })();
 
-    // ------- Visão do Trimestre -------
+    /* ===== Visão do Trimestre ===== */
     (function renderQuarter(){
       const d = parseLocal(todayISO());
       const y = d.getFullYear();
@@ -288,7 +320,7 @@
       document.getElementById('quarter-notes').textContent = notes || 'Sem anotações do trimestre ainda.';
     })();
 
-    // ------- Hábitos (semana) -------
+    /* ===== Hábitos (semana) ===== */
     (function renderHabitsSummary(){
       const el = document.getElementById('habits-summary');
       const habits = getHabits();
@@ -296,15 +328,10 @@
       let html='';
 
       habits.forEach(h=>{
-        h.checks ||= {};
-        const dots = weekDays.map(iso=>{
-          const wk  = weekKeyOfISO(iso);
-          const idx = dayIndexOfISO(iso);
-          const arr = (h.checks[wk] ||= Array(7).fill(false));
-          return `<span class="ring-dot ${arr[idx]?'done':''}"></span>`;
-        }).join('');
+        const dots = weekDays.map(iso=> `<span class="ring-dot ${getCheck(h, iso)?'done':''}"></span>`).join('');
         const wk = weekKeyOfISO(weekDays[0]);
-        const pct = Math.round(((h.checks[wk]||[]).filter(Boolean).length/7)*100)||0;
+        // calcula % pela própria semana mostrada
+        const pct = Math.round( (weekDays.filter(iso=>getCheck(h, iso)).length/7)*100 ) || 0;
         html += `<div class="h-row">
           <div class="h-name">${h.name||h.title||'Hábito'}</div>
           <div class="h-dots">${dots}<div class="h-pct">${pct}%</div></div>
@@ -315,7 +342,7 @@
       el.innerHTML = html + `<div class="muted" style="margin-top:6px">* visão geral — edite em Journal → Hábitos</div>`;
     })();
 
-    // ------- 21 dias -------
+    /* ===== 21 dias ===== */
     (function setupHabits21(){
       const btn = document.getElementById('btn-habits-21');
       const panel = document.getElementById('habits-21-panel');
@@ -324,20 +351,11 @@
       const habits = getHabits();
       if(!habits.length){ btn.style.display='none'; return; }
 
-      function last3WeeksArr(checksObj){
-        const keys = Object.keys(checksObj||{}).sort(); // cronológico
-        const last3 = keys.slice(-3);
-        let arr = [];
-        last3.forEach(k=>{ arr = arr.concat((checksObj[k]||[]).slice(0,7)); });
-        while(arr.length<21) arr.unshift(false);
-        return arr.slice(-21);
-      }
-
       function build(){
-        const habitsNow = getHabits(); // re-lê (caso tenha marcado no outro módulo)
+        const habitsNow = getHabits();
         panel.innerHTML='';
         habitsNow.forEach(h=>{
-          const series = last3WeeksArr(h.checks||{});
+          const series = series21(h);
           const row = document.createElement('div'); row.className='fo-habit-row';
           row.innerHTML = `<div class="fo-habit-name">${h.name||h.title||'Hábito'}</div>`;
           const grid = document.createElement('div'); grid.className='fo-dots';
@@ -353,7 +371,7 @@
       });
     })();
 
-    // ------- Agenda de Conteúdo -------
+    /* ===== Agenda de Conteúdo ===== */
     (function renderContentSummary(){
       const el = document.getElementById('content-summary');
       const dates = weekRangeFromISO(todayISO());
@@ -390,7 +408,7 @@
       el.innerHTML = html;
     })();
 
-    // ------- Resumo do Journal (Monthly) -------
+    /* ===== Resumo do Journal (Monthly) ===== */
     (function renderJournalSummary(){
       const el = document.getElementById('journal-summary');
       const dates = weekRangeFromISO(todayISO());
