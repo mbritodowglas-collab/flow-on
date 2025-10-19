@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Flow On — Journal</title>
   <link rel="stylesheet" href="../../assets/css/style.css" />
-  <link rel="stylesheet" href="../../assets/css/journal.css" />
   <link rel="icon" href="../../assets/img/favicon-32.png" />
 </head>
 <body>
@@ -24,72 +23,79 @@
     </div>
   </header>
 
-  <main class="container container--single">
+  <main class="container">
     <div class="tabs">
-      <button class="tab-btn active" data-tab="habits">Hábitos</button>
-      <button class="tab-btn" data-tab="daily">Daily Log</button>
-      <button class="tab-btn" data-tab="monthly">Monthly Log</button>
-      <button class="tab-btn" data-tab="quarter">Trimestral</button>
+      <button class="tab active" data-tab="habitos">Hábitos</button>
+      <button class="tab" data-tab="daily">Daily Log</button>
+      <button class="tab" data-tab="monthly">Monthly Log</button>
+      <button class="tab" data-tab="trimestral">Trimestral</button>
     </div>
 
-    <section id="tab-habits" class="tab-view active">
-      <div class="card">
-        <div class="card-head">
-          <h2>Hábitos</h2>
-          <button id="btnAddHabit" class="btn">+ Hábito</button>
-        </div>
-        <div id="habitsTable"></div>
-        <div class="muted" style="margin-top:6px">Aro verde = feito. Percentual é calculado por semana.</div>
-      </div>
+    <!-- HÁBITOS -->
+    <section class="card tab-pane active" id="tab-habitos">
+      <h2>Hábitos</h2>
+      <div id="habitsList"></div>
+      <div style="margin-top:10px"><button id="btnAddHabit" class="btn">+ Hábito</button></div>
     </section>
 
-    <section id="tab-daily" class="tab-view">
-      <div class="card">
-        <h2>Daily Log</h2>
+    <!-- DAILY LOG -->
+    <section class="card tab-pane" id="tab-daily">
+      <h2>Daily Log</h2>
+      <div class="form" style="max-width:800px">
+        <label>Data</label>
+        <select id="dailyDate"></select>
+        <label>Foco (1 frase)</label>
+        <input id="dailyFocus" placeholder="Foco do dia" />
+        <label>3 MITs (separe por ;)</label>
+        <input id="dailyMITs" placeholder="Ex.: Gravar; Editar; Publicar" />
+        <label>Gratidão (3 itens; ;)</label>
+        <input id="dailyGrat" placeholder="Ex.: Família; Saúde; Cliente X" />
+        <label>Humor (1-10)</label>
+        <input id="dailyMood" type="number" min="1" max="10" />
+        <label>Notas / Reflexão</label>
+        <textarea id="dailyNotes" rows="6" placeholder="Anotações do dia"></textarea>
+        <div style="margin-top:8px"><button id="btnSaveDaily" class="btn">Salvar Daily</button></div>
+      </div>
+
+      <h3 style="margin-top:16px">Últimos registros</h3>
+      <div id="dailyRecent"></div>
+    </section>
+
+    <!-- MONTHLY LOG (AGENDA DO MÊS) -->
+    <section class="card tab-pane" id="tab-monthly">
+      <h2>Monthly Log</h2>
+      <div class="muted small" style="margin-bottom:8px">
+        Programe as <b>atividades do mês</b>. Elas aparecem na Home como <b>agenda semanal</b>.
+      </div>
+
+      <div class="form" style="max-width:900px">
         <div class="grid-2">
-          <div class="form">
-            <label>Data</label>
-            <input type="date" id="dlDate" />
-            <label>Foco (1 frase)</label>
-            <input id="dlFocus" placeholder="Foco do dia" />
-            <label>3 MITs (separe por ;)</label>
-            <input id="dlMITs" placeholder="Ex.: Gravar; Editar; Publicar" />
-            <label>Gratidão (3 itens; ;)</label>
-            <input id="dlGratidao" placeholder="Ex.: Família; Saúde; Cliente X" />
-            <label>Humor (1-10)</label>
-            <input id="dlMood" type="number" min="1" max="10" />
-            <label>Notas / Reflexão</label>
-            <textarea id="dlNotes" rows="5" placeholder="Anotações do dia"></textarea>
-            <div>
-              <button id="btnSaveDaily" class="btn">Salvar Daily</button>
-            </div>
+          <div>
+            <label>Título</label>
+            <input id="mTitle" placeholder="Ex.: Revisar planejamento Q4" />
           </div>
           <div>
-            <h3 class="small" style="margin:0 0 8px">Últimos registros</h3>
-            <div id="dailyList"></div>
+            <label>Data</label>
+            <input id="mDate" type="date" />
           </div>
         </div>
-      </div>
-    </section>
-
-    <section id="tab-monthly" class="tab-view">
-      <div class="card">
-        <h2>Monthly Log</h2>
-        <div id="monthlySummary" class="monthly-summary"></div>
-        <div class="divider"></div>
-        <textarea id="monthlyNotes" rows="6" placeholder="Vitórias, travas, aprendizados..."></textarea>
-      </div>
-    </section>
-
-    <section id="tab-quarter" class="tab-view">
-      <div class="card">
-        <h2>Trimestral</h2>
-        <div class="grid-3">
-          <textarea id="qGoals" rows="6" placeholder="Metas do ciclo"></textarea>
-          <textarea id="qHabitsUp" rows="6" placeholder="Hábitos a reforçar"></textarea>
-          <textarea id="qHabitsDown" rows="6" placeholder="Hábitos a substituir"></textarea>
+        <label>Observações</label>
+        <textarea id="mNotes" rows="4" placeholder="Contexto, checklist, links…"></textarea>
+        <div style="margin-top:8px">
+          <button id="btnAddMonthItem" class="btn">+ Adicionar</button>
         </div>
       </div>
+
+      <h3 style="margin-top:16px">Agenda do mês (itens)</h3>
+      <div id="monthList"></div>
+    </section>
+
+    <!-- TRIMESTRAL -->
+    <section class="card tab-pane" id="tab-trimestral">
+      <h2>Trimestral</h2>
+      <div class="muted">Espaço para metas e ajustes de hábitos a cada 90 dias.</div>
+      <textarea id="triNotes" rows="8" placeholder="Metas, ajustes e observações do trimestre..." style="width:100%"></textarea>
+      <div style="margin-top:8px"><button id="btnSaveTri" class="btn">Salvar</button></div>
     </section>
   </main>
 
@@ -97,6 +103,6 @@
     <p>Flow On © 2025 — Planeje. Execute. Evolua.</p>
   </footer>
 
-  <script src="../../assets/js/journal.js"></script>
+  <script src="../../assets/js/journal.js?v=2"></script>
 </body>
 </html>
