@@ -179,3 +179,275 @@ index.html              (Home)
   font-size:22px; line-height:1; text-decoration:none;
 }
 
+/* ==========================================================================
+   Flow On — Style (global)
+   ==========================================================================
+   - Paleta com variáveis CSS
+   - Layout base (navbar, container, footer)
+   - Cards, botões, badges
+   - Formulários
+   - Listas “agenda”
+   - Hábitos (semana + 21 dias)
+   - Utilitários
+   ========================================================================== */
+
+:root{
+  --bg: #0b0d12;
+  --bg-elev: #11141b;
+  --text: #e9eef5;
+  --muted: #a8b3c7;
+  --primary: #7aa2ff;
+  --primary-2: #4c86ff;
+  --accent: #50fa7b;
+  --warning: #ffec99;
+  --danger: #ff6b6b;
+  --border: rgba(255,255,255,.12);
+  --shadow: 0 8px 28px rgba(0,0,0,.35);
+}
+
+*{ box-sizing:border-box; }
+html, body{ height:100%; }
+body{
+  margin:0; padding:0;
+  background: radial-gradient(1200px 800px at 10% -20%, rgba(122,162,255,.08), transparent 60%),
+              radial-gradient(800px 600px at 100% 0%, rgba(80,250,123,.06), transparent 60%),
+              var(--bg);
+  color:var(--text);
+  font: 400 16px/1.55 system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif;
+}
+
+/* --------------------------------------------------------------------------
+   NAVBAR
+   -------------------------------------------------------------------------- */
+.navbar{
+  position: sticky; top:0; z-index: 50;
+  background: linear-gradient(180deg, rgba(17,20,27,.9), rgba(17,20,27,.75));
+  border-bottom:1px solid var(--border);
+  backdrop-filter: blur(8px);
+}
+.nav-inner{
+  max-width: 1100px; margin:0 auto;
+  display:flex; align-items:center; justify-content:space-between;
+  gap:14px; padding:12px 16px;
+}
+.logo{display:flex; align-items:center; gap:10px; font-weight:800; letter-spacing:.2px}
+.logo img{width:28px; height:28px}
+.menu{display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+.menu a{
+  display:inline-flex; align-items:center; gap:6px;
+  color:var(--text); text-decoration:none;
+  padding:8px 10px; border-radius:10px; border:1px solid transparent;
+  transition: .15s ease;
+}
+.menu a:hover{ background:rgba(255,255,255,.05); border-color:var(--border) }
+.menu a.active{ background:rgba(122,162,255,.13); border-color:rgba(122,162,255,.35) }
+
+/* --------------------------------------------------------------------------
+   CONTAINER / CARD / FOOTER
+   -------------------------------------------------------------------------- */
+.container{
+  max-width: 1100px; margin:16px auto; padding:0 16px 24px;
+}
+.card{
+  background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+  border:1px solid var(--border);
+  border-radius:16px; padding:16px; margin:14px 0;
+  box-shadow: var(--shadow);
+}
+.card h2{ margin:0 0 8px; font-size:1.25rem; }
+.card-head{
+  display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+}
+.footer{
+  border-top:1px solid var(--border);
+  text-align:center; padding:16px; color:var(--muted);
+}
+
+/* --------------------------------------------------------------------------
+   BOTÕES / PÍLULAS / BADGES
+   -------------------------------------------------------------------------- */
+.btn{
+  appearance:none; cursor:pointer;
+  background:linear-gradient(180deg, rgba(122,162,255,.18), rgba(122,162,255,.11));
+  border:1px solid rgba(122,162,255,.45);
+  color:var(--text); padding:10px 14px; border-radius:12px;
+  font-weight:600; letter-spacing:.2px;
+  transition:.15s ease; box-shadow:0 6px 20px rgba(0,0,0,.25);
+}
+.btn:hover{ transform: translateY(-1px); box-shadow:0 10px 26px rgba(0,0,0,.32); }
+.btn:active{ transform: translateY(0); }
+.btn.small{ padding:7px 10px; font-size:.9rem; border-radius:10px; }
+.btn.big{ padding:14px 18px; font-size:1rem; }
+.btn.ghost{
+  background:transparent; border-color:var(--border);
+}
+.btn.danger{
+  background:linear-gradient(180deg, rgba(255,107,107,.18), rgba(255,107,107,.10));
+  border-color: rgba(255,107,107,.5);
+}
+.btn-group{ display:flex; gap:8px; flex-wrap:wrap }
+
+.badge{
+  display:inline-flex; align-items:center; gap:6px;
+  padding:4px 10px; border-radius:999px; border:1px solid var(--border);
+  background:rgba(255,255,255,.04); color:var(--text);
+}
+.pill{
+  display:inline-flex; align-items:center;
+  font-size:.85rem; padding:3px 8px;
+  border:1px solid var(--border); border-radius:999px; opacity:.9;
+}
+
+/* --------------------------------------------------------------------------
+   FORM / INPUTS
+   -------------------------------------------------------------------------- */
+.form{ display:flex; flex-direction:column; gap:10px }
+label{ font-size:.95rem; color:var(--muted) }
+input[type="text"],
+input[type="number"],
+input[type="date"],
+select, textarea{
+  width:100%; color:var(--text);
+  background:rgba(255,255,255,.04);
+  border:1px solid var(--border); border-radius:10px;
+  padding:10px 12px; outline:none; transition:.15s ease;
+}
+textarea{ resize: vertical; }
+input:focus, select:focus, textarea:focus{ border-color: rgba(122,162,255,.6); box-shadow:0 0 0 3px rgba(122,162,255,.15); }
+
+/* grids utilitárias para formulários */
+.grid-2{ display:grid; grid-template-columns:repeat(2,1fr); gap:10px }
+.grid-3{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px }
+.grid-4{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px }
+@media (max-width: 860px){
+  .grid-4{ grid-template-columns:repeat(2,1fr) }
+}
+@media (max-width: 520px){
+  .grid-2, .grid-3, .grid-4{ grid-template-columns:1fr }
+}
+
+/* --------------------------------------------------------------------------
+   LISTA/AGENDA (dias com itens)
+   -------------------------------------------------------------------------- */
+.list-day{
+  padding:10px; border:1px solid var(--border); border-radius:12px; margin:8px 0;
+  background:rgba(255,255,255,.02);
+}
+.list-day-head{
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:6px; gap:8px;
+}
+.small{ font-size:.9rem }
+.muted{ color:var(--muted) }
+
+/* --------------------------------------------------------------------------
+   HÁBITOS — semana (pontos com aro verde)
+   -------------------------------------------------------------------------- */
+.h-row{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:8px 0; border-bottom:1px dashed var(--border);
+}
+.h-row:last-child{ border-bottom:0 }
+.h-name{ font-weight:600 }
+.h-dots{ display:flex; align-items:center; gap:8px }
+.ring-dot{
+  width:12px; height:12px; border:2px solid #2ecc71; border-radius:50%;
+  background: transparent;
+}
+.ring-dot.done{
+  background:linear-gradient(180deg,#50fa7b,#2ecc71);
+  border-color:transparent;
+}
+.h-pct{ font-size:.85rem; opacity:.7 }
+
+/* --------------------------------------------------------------------------
+   HOME — cards extras (Progresso Geral / Trimestral / 21 dias)
+   -------------------------------------------------------------------------- */
+.fo-card{
+  border:1px solid var(--border); border-radius:16px; padding:14px; margin:14px 0;
+  background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.025));
+  box-shadow: var(--shadow);
+}
+.fo-title{ font-size:1.2rem; font-weight:700; margin:0 0 8px }
+.fo-muted{ opacity:.75; color:var(--muted) }
+
+.fo-kpis{
+  display:grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap:10px; margin-top:8px;
+}
+.fo-kpi{
+  border:1px solid var(--border); border-radius:12px; padding:12px;
+  background:rgba(255,255,255,.02);
+}
+.fo-kpi strong{ font-size:1.3rem; letter-spacing:.3px }
+
+.fo-link{ color: var(--primary); text-decoration: underline; }
+.fo-link:hover{ color: var(--primary-2); }
+
+.fo-habit-row{ margin:10px 0 }
+.fo-habit-name{ font-weight:600; margin-bottom:6px }
+
+.fo-dots{
+  display:grid; grid-template-columns: repeat(21, 10px);
+  gap:6px; margin-top:8px;
+}
+.fo-dot{
+  width:10px; height:10px; border-radius:50%;
+  border:1px solid var(--border); opacity:.65; background:transparent;
+}
+.fo-dot.on{
+  background:linear-gradient(180deg,#50fa7b,#2ecc71);
+  border-color:transparent; opacity:1;
+}
+
+/* --------------------------------------------------------------------------
+   CARDS/TILES (temas & painéis visuais)
+   -------------------------------------------------------------------------- */
+.tiles{ display:grid; grid-template-columns:repeat(auto-fit, minmax(240px,1fr)); gap:16px }
+.tile{
+  display:flex; flex-direction:column; gap:10px;
+  padding:18px 16px; border-radius:16px;
+  background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.03));
+  border:1px solid rgba(255,255,255,.12);
+  box-shadow: var(--shadow);
+  transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
+}
+.tile:hover{ transform: translateY(-2px); box-shadow: 0 12px 30px rgba(0,0,0,.35); border-color: rgba(255,255,255,.18) }
+.tile h3{ margin:0; display:flex; align-items:center; gap:8px }
+.emoji{
+  font-size:20px; line-height:1; padding:6px 8px; border-radius:10px;
+  background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.12)
+}
+.section-title{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  margin:10px 0 6px;
+}
+
+/* --------------------------------------------------------------------------
+   TABLE (caso precise nos relatórios)
+   -------------------------------------------------------------------------- */
+.table{
+  width:100%; border-collapse: collapse; margin-top:8px; font-size:.95rem;
+}
+.table th, .table td{
+  border:1px solid var(--border); padding:8px 10px; text-align:left;
+}
+.table th{ background: rgba(255,255,255,.04); }
+
+/* --------------------------------------------------------------------------
+   UTILITÁRIOS
+   -------------------------------------------------------------------------- */
+.center{ text-align:center }
+.right{ text-align:right }
+.flex{ display:flex; gap:8px; align-items:center; flex-wrap:wrap }
+.hidden{ display:none !important }
+hr.sep{ border:0; border-top:1px solid var(--border); margin:12px 0 }
+
+/* --------------------------------------------------------------------------
+   RESPONSIVO
+   -------------------------------------------------------------------------- */
+@media (max-width: 740px){
+  .nav-inner{ padding:10px 12px }
+  .logo span{ display:none }
+}
+
