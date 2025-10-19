@@ -188,22 +188,19 @@ function setMonthLabelAndCounters(){
   document.getElementById('monthCounters').innerHTML =
     `Pendentes: <b>${pend}</b> • Concluídos: <b>${done}</b> • Total: <b>${total}</b>`;
 }
-function goPrevMonth(){
-  if(viewMonth===0){ viewMonth=11; viewYear--; } else { viewMonth--; }
-  setMonthLabelAndCounters();
-  drawMonthList();
-}
-function goNextMonth(){
-  if(viewMonth===11){ viewMonth=0; viewYear++; } else { viewMonth++; }
-  setMonthLabelAndCounters();
-  drawMonthList();
-}
+function goPrevMonth(){ if(viewMonth===0){ viewMonth=11; viewYear--; } else { viewMonth--; } setMonthLabelAndCounters(); drawMonthList(); }
+function goNextMonth(){ if(viewMonth===11){ viewMonth=0; viewYear++; } else { viewMonth++; } setMonthLabelAndCounters(); drawMonthList(); }
 function jumpToSelected(){
   const y = Number(document.getElementById('jumpYear').value);
   const m = Number(document.getElementById('jumpMonth').value);
   viewYear = y; viewMonth = m;
-  setMonthLabelAndCounters();
-  drawMonthList();
+  setMonthLabelAndCounters(); drawMonthList();
+}
+function jumpToToday(){
+  const now = new Date();
+  viewYear  = now.getFullYear();
+  viewMonth = now.getMonth();
+  setMonthLabelAndCounters(); drawMonthList();
 }
 
 function setMonthFilter(f){
@@ -390,6 +387,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
   document.getElementById('btnPrevMonth').onclick = goPrevMonth;
   document.getElementById('btnNextMonth').onclick = goNextMonth;
   document.getElementById('btnJump').onclick = jumpToSelected;
+  document.getElementById('btnToday').onclick = jumpToToday;
   document.querySelectorAll('#monthFilters .btn').forEach(b=>{
     b.onclick = ()=> setMonthFilter(b.dataset.filter);
   });
