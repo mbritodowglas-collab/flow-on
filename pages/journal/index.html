@@ -57,8 +57,16 @@
         <div style="margin-top:8px"><button id="btnSaveDaily" class="btn">Salvar Daily</button></div>
       </div>
 
-      <h3 style="margin-top:16px">Últimos registros</h3>
+      <div style="display:flex; align-items:center; gap:10px; margin-top:16px">
+        <h3 style="margin:0">Últimos registros</h3>
+        <button id="btnToggleDailyMonth" class="btn small">Ver todos do mês</button>
+      </div>
       <div id="dailyRecent"></div>
+
+      <div id="dailyMonth" style="display:none; margin-top:10px">
+        <h3 class="muted" style="margin:6px 0 8px">Registros do mês atual</h3>
+        <div id="dailyMonthList"></div>
+      </div>
     </section>
 
     <!-- MONTHLY LOG -->
@@ -141,6 +149,6 @@
     <p>Flow On © 2025 — Planeje. Execute. Evolua.</p>
   </footer>
 
-  <script src="../../assets/js/journal.js?v=7"></script>
+  <script src="../../assets/js/journal.js?v=8"></script>
 </body>
 </html>
