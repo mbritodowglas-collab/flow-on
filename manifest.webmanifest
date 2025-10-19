@@ -7,7 +7,11 @@
   "background_color": "#0b1220",
   "theme_color": "#0ea5e9",
   "icons": [
-    { "src": "/assets/img/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/assets/img/icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
+    { "src": "/assets/img/icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/assets/img/icons/icon-maskable.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" },
+
+    /* Fallbacks PNG (recomendado p/ iOS) — exporte desses SVGs */
+    { "src": "/assets/img/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/assets/img/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
   ]
 }
