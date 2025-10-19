@@ -3,100 +3,219 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Flow On — Temas & Roteiros</title>
+  <title>Flow On — Conteúdos</title>
   <link rel="stylesheet" href="../../assets/css/style.css" />
-  <link rel="icon" href="../../assets/img/favicon-32.png" />
+  <style>
+    /* ------- estilos específicos desta página ------- */
+    .hub-wrap{max-width:1080px;margin:0 auto}
+    .tiles{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+      gap:16px; margin-top:16px;
+    }
+    .tile{
+      display:flex; flex-direction:column; gap:10px;
+      padding:18px 16px; border-radius:16px;
+      background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.03));
+      border:1px solid rgba(255,255,255,.08);
+      box-shadow:0 6px 20px rgba(0,0,0,.25);
+      transition:transform .12s ease, box-shadow .12s ease, border-color .12s ease;
+    }
+    .tile:hover{box-shadow:0 10px 26px rgba(0,0,0,.35); border-color:rgba(255,255,255,.18)}
+    .tile h3{margin:0; display:flex; align-items:center; gap:8px}
+    .emoji{font-size:20px; line-height:1; padding:6px 8px; border-radius:10px;
+           background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.08)}
+    .tile .muted{opacity:.7}
+    .list{display:flex; flex-direction:column; gap:8px; margin-top:10px}
+    .item{
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      padding:10px 12px; border-radius:12px; border:1px solid var(--border);
+      background:rgba(255,255,255,.02);
+    }
+    .item small{opacity:.65}
+    .flex{display:flex; gap:8px; flex-wrap:wrap}
+    .section-title{display:flex; align-items:center; justify-content:space-between; gap:10px; margin:16px 0 8px}
+    .pill{font-size:.85rem; padding:4px 8px; border:1px solid var(--border); border-radius:999px; opacity:.8}
+    /* cores sutis por seção */
+    .t-ideas{background:linear-gradient(180deg, rgba(124,166,255,.12), rgba(124,166,255,.05))}
+    .t-drafts{background:linear-gradient(180deg, rgba(255,163,102,.14), rgba(255,163,102,.06))}
+    .t-plan{background:linear-gradient(180deg, rgba(87,201,114,.12), rgba(87,201,114,.06))}
+    .t-insights{background:linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03))}
+  </style>
 </head>
 <body>
   <header class="navbar">
-    <div class="nav-inner">
-      <div class="logo">
-        <img src="../../assets/img/logo.svg" alt="Flow On logo" />
-        <span>Flow On</span>
-      </div>
+    <div class="nav-inner" style="justify-content:space-between">
       <nav class="menu">
         <a href="../../index.html">🏠 Home</a>
         <a href="../journal/">📓 Journal</a>
-        <a href="./" class="active">🎬 Temas</a>
+        <a href="../reports/">📊 Relatórios</a>
         <a href="../settings/">⚙️ Configurações</a>
       </nav>
     </div>
   </header>
 
-  <main class="container">
-    <!-- IDEIAS: só listar + excluir -->
-    <section class="card">
-      <div class="card-head">
-        <h2>Banco de Ideias</h2>
-        <button id="btnAddIdea" class="btn">+ Ideia</button>
-      </div>
-      <div id="ideasList"></div>
+  <main class="container hub-wrap">
+    <section class="card" style="text-align:center">
+      <h1>Flow On — Conteúdos</h1>
+      <p class="muted">Banco de ideias, rascunhos por formato e planejamento de publicações.</p>
     </section>
 
-    <!-- RASCUNHOS: criar a partir das ideias (multi-destino) -->
-    <section class="card">
-      <div class="card-head">
-        <h2>Rascunhos</h2>
-        <button id="btnCreateDraft" class="btn">+ Criar rascunho</button>
+    <!-- ====== BLOCO 1: BANCO DE IDEIAS ====== -->
+    <section class="tile t-ideas">
+      <div class="section-title">
+        <h3><span class="emoji">💡</span> Banco de Ideias</h3>
+        <div class="flex">
+          <button id="btnAddIdea" class="btn small">+ Ideia</button>
+          <span class="pill" id="ideasCount">0 itens</span>
+        </div>
       </div>
-      <div class="muted small" style="margin-bottom:6px">
-        Um rascunho = 1 destino (YouTube, Reels/TikTok, Carrossel, Imagem estática ou Blog).
+      <!-- Lista de ideias (somente leitura). cada item tem ações: mover p/ rascunho, excluir -->
+      <div id="ideasList" class="list">
+        <!-- itens são injetados via JS. Exemplo de item:
+        <div class="item">
+          <div>
+            <strong>Título da ideia</strong>
+            <div class="muted">tags/persona (opcional)</div>
+          </div>
+          <div class="flex">
+            <button class="btn small">Usar no rascunho</button>
+            <button class="btn small danger">Excluir</button>
+          </div>
+        </div>
+        -->
       </div>
-      <div id="draftsList"></div>
     </section>
 
-    <!-- PLANEJAMENTO 30 DIAS (posts com data) -->
-    <section class="card">
-      <div class="card-head">
-        <h2>Planejamento (próximos 30 dias)</h2>
+    <!-- ====== BLOCO 2: RASCUNHOS POR FORMATO ====== -->
+    <section class="tile t-drafts">
+      <div class="section-title">
+        <h3><span class="emoji">✍️</span> Rascunhos</h3>
+        <div class="flex">
+          <button id="btnCreateDraft" class="btn small">+ Criar rascunho</button>
+          <span class="pill">1 rascunho = 1 destino</span>
+        </div>
       </div>
-      <div id="planList"></div>
+
+      <!-- filtros rápidos (apenas visuais; preserve os IDs se já usa) -->
+      <div class="flex" style="margin-bottom:8px">
+        <button class="btn small" data-filter="all">Todos</button>
+        <button class="btn small" data-filter="youtube">YouTube</button>
+        <button class="btn small" data-filter="short">Reels/TikTok</button>
+        <button class="btn small" data-filter="carousel">Carrossel</button>
+        <button class="btn small" data-filter="static">Imagem estática</button>
+        <button class="btn small" data-filter="blog">Blog</button>
+      </div>
+
+      <!-- Lista de rascunhos -->
+      <div id="draftsList" class="list">
+        <!-- itens injetados via JS.
+        Estrutura esperada (conservando classes e datas para JS):
+        <div class="item" data-kind="youtube" data-date="2025-10-21">
+          <div>
+            <strong>Tema X — YouTube</strong>
+            <div class="muted">rótulos/persona • agendar: 2025-10-21</div>
+          </div>
+          <div class="flex">
+            <a class="btn small" href="./edit.html?id=...">Editar</a>
+            <button class="btn small" data-action="schedule">Agendar</button>
+            <button class="btn small danger" data-action="delete">Excluir</button>
+          </div>
+        </div>
+        -->
+      </div>
     </section>
 
-    <!-- ANÁLISE (publicados aguardando análise/arquivo) -->
-    <section class="card">
-      <h2>Análise de Conteúdo</h2>
-      <div class="muted small" style="margin-bottom:6px">Preencha métricas e arquive quando encerrar.</div>
-      <div id="insightsList"></div>
+    <!-- ====== BLOCO 3: PLANEJAMENTO (PRÓXIMOS 30 DIAS) ====== -->
+    <section class="tile t-plan">
+      <div class="section-title">
+        <h3><span class="emoji">📅</span> Planejamento (próximos 30 dias)</h3>
+        <div class="flex">
+          <button id="btnNewBlankPost" class="btn small">+ Post em branco</button>
+          <a href="./calendar.html" class="btn small">Ver calendário</a>
+          <span class="pill" id="planRangeLabel">–</span>
+        </div>
+      </div>
+
+      <!-- Calendário linear por dia -->
+      <div id="planList" class="list">
+        <!-- Exemplo de dia e itens (JS monta):
+        <div class="item">
+          <div>
+            <strong>seg., 20</strong>
+            <div class="muted">planejamento</div>
+          </div>
+          <div>
+            <div>• Tema A — YouTube</div>
+            <div>• Tema B — Reels</div>
+          </div>
+        </div>
+        -->
+      </div>
+    </section>
+
+    <!-- ====== BLOCO 4: ANÁLISE DE CONTEÚDO ====== -->
+    <section class="tile t-insights">
+      <div class="section-title">
+        <h3><span class="emoji">📊</span> Análise de Conteúdo</h3>
+        <div class="flex">
+          <span class="pill">preencha métricas e arquive</span>
+        </div>
+      </div>
+
+      <div class="form" id="analysisForm" style="max-width:920px">
+        <div class="grid-4">
+          <div><label>Título/tema</label><input id="anTitle" placeholder="Tema da publicação" /></div>
+          <div><label>Formato</label>
+            <select id="anFormat">
+              <option value="youtube">YouTube</option>
+              <option value="short">Reels/TikTok</option>
+              <option value="carousel">Carrossel</option>
+              <option value="static">Imagem estática</option>
+              <option value="blog">Blog</option>
+            </select>
+          </div>
+          <div><label>Data</label><input id="anDate" type="date" /></div>
+          <div><label>Status</label>
+            <select id="anStatus">
+              <option value="posted">Publicado</option>
+              <option value="returned">Devolvido p/ rascunho</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid-4">
+          <div><label>Views</label><input id="anViews" type="number" min="0" /></div>
+          <div><label>Likes</label><input id="anLikes" type="number" min="0" /></div>
+          <div><label>Comments</label><input id="anComments" type="number" min="0" /></div>
+          <div><label>Cliques/CTA</label><input id="anClicks" type="number" min="0" /></div>
+        </div>
+
+        <label>Observações</label>
+        <textarea id="anNotes" rows="5" placeholder="Insights, hipóteses, próximos testes…"></textarea>
+
+        <div class="flex" style="margin-top:8px">
+          <button id="btnSaveAnalysis" class="btn">Salvar análise</button>
+          <button id="btnArchivePost" class="btn">Arquivar</button>
+          <button id="btnDeletePost" class="btn danger">Excluir</button>
+        </div>
+      </div>
+
+      <!-- Itens analisados recentemente -->
+      <div class="section-title" style="margin-top:16px">
+        <h3 class="muted">Últimas análises</h3>
+        <div class="flex">
+          <button id="btnShowArchived" class="btn small">Ver arquivados</button>
+        </div>
+      </div>
+      <div id="analysisRecent" class="list"></div>
     </section>
   </main>
 
-  <footer class="footer">
-    <p>Flow On © 2025 — Planeje. Execute. Evolua.</p>
-  </footer>
+  <footer class="footer"><p>Flow On © 2025 — Planeje. Execute. Evolua.</p></footer>
 
-  <!-- MODAL: criar rascunho(s) com múltiplos destinos -->
-  <dialog id="modalCreateDraft" class="modal">
-    <form method="dialog" class="modal-box">
-      <div class="card-head" style="margin-bottom:8px">
-        <h3>Novo(s) rascunho(s)</h3>
-        <button class="btn">Fechar</button>
-      </div>
-      <div class="grid-2">
-        <div class="form">
-          <label>Escolha a ideia</label>
-          <select id="draftIdeaSelect"></select>
-        </div>
-        <div class="form">
-          <label>Destinos (selecione 1 ou mais)</label>
-          <div id="destinosGroup" class="small" style="display:flex; gap:10px; flex-wrap:wrap">
-            <label><input type="checkbox" value="yt_long"> YouTube (vídeo longo)</label>
-            <label><input type="checkbox" value="short"> Reels / TikTok</label>
-            <label><input type="checkbox" value="carousel"> Carrossel</label>
-            <label><input type="checkbox" value="static"> Imagem estática</label>
-            <label><input type="checkbox" value="blog"> Blog</label>
-          </div>
-          <div class="muted small" style="margin-top:6px">
-            * A ideia <b>não será removida</b>. Você pode criar mais rascunhos dela quando quiser.
-          </div>
-        </div>
-      </div>
-      <div style="margin-top:10px">
-        <button id="btnConfirmCreateDraft" class="btn">Criar</button>
-      </div>
-    </form>
-  </dialog>
-
+  <!-- scripts (mantém sua lógica atual) -->
+  <script src="../../assets/js/core.js?v=4"></script>
   <script src="../../assets/js/themes.js?v=4"></script>
 </body>
 </html>
