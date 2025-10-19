@@ -6,6 +6,21 @@
   <title>Flow On — Sua Rotina em Movimento</title>
   <link rel="stylesheet" href="assets/css/style.css" />
   <link rel="icon" href="assets/img/favicon-32.png" />
+  <style>
+    /* extras visuais dos novos cards */
+    .fo-card{border:1px solid var(--border);border-radius:16px;padding:14px;margin:14px 0;background:rgba(255,255,255,.02)}
+    .fo-title{font-size:1.2rem;font-weight:700;margin:0 0 8px}
+    .fo-muted{opacity:.7}
+    .fo-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-top:8px}
+    .fo-kpi{border:1px solid var(--border);border-radius:12px;padding:12px}
+    .fo-kpi strong{font-size:1.3rem}
+    .fo-dots{display:grid;grid-template-columns:repeat(21,10px);gap:6px;margin-top:8px}
+    .fo-dot{width:10px;height:10px;border-radius:50%;border:1px solid var(--border);opacity:.6}
+    .fo-dot.on{background:linear-gradient(180deg,#50fa7b,#2ecc71);border-color:transparent;opacity:1}
+    .fo-habit-row{margin:10px 0}
+    .fo-habit-name{font-weight:600;margin-bottom:6px}
+    .fo-link{color:#7aa2ff;text-decoration:underline}
+  </style>
 </head>
 <body>
   <header class="navbar">
@@ -24,13 +39,35 @@
   </header>
 
   <main class="container">
-    <section class="card">
-      <h2>Hábitos da Semana</h2>
-      <div id="habits-summary">
-        <p>Carregando hábitos...</p>
+    <!-- NOVO: Progresso Geral -->
+    <section class="fo-card" id="progress-card">
+      <h2 class="fo-title">Progresso Geral</h2>
+      <div class="fo-kpis">
+        <div class="fo-kpi"><div class="fo-muted">Hábitos (semana)</div><strong id="kpi-habits">—</strong></div>
+        <div class="fo-kpi"><div class="fo-muted">Dailies (7 dias)</div><strong id="kpi-dailies">0</strong></div>
+        <div class="fo-kpi"><div class="fo-muted">Conteúdos (próx. 7 dias)</div><strong id="kpi-posts">0</strong></div>
       </div>
     </section>
 
+    <!-- NOVO: Visão do Trimestre -->
+    <section class="fo-card" id="quarter-card">
+      <h2 class="fo-title">Visão do Trimestre <span class="fo-muted" id="quarter-label"></span></h2>
+      <div class="fo-muted" id="quarter-notes" style="white-space:pre-line">Sem anotações do trimestre ainda.</div>
+      <div style="margin-top:8px">
+        <a class="fo-link" href="pages/quarterly/">Abrir página do Trimestral</a>
+      </div>
+    </section>
+
+    <!-- Hábitos (mantido) -->
+    <section class="card" id="habits-card">
+      <h2>Hábitos da Semana</h2>
+      <div id="habits-summary"><p>Carregando hábitos...</p></div>
+      <!-- NOVO botão e painel de 21 dias -->
+      <button id="btn-habits-21" class="btn small" style="margin-top:8px">Ver 21 dias</button>
+      <div id="habits-21-panel" style="display:none"></div>
+    </section>
+
+    <!-- Agenda de Conteúdo (mantido) -->
     <section class="card">
       <h2>Agenda de Conteúdo</h2>
       <div id="content-summary">
@@ -38,6 +75,7 @@
       </div>
     </section>
 
+    <!-- Resumo do Journal (mantido) -->
     <section class="card">
       <h2>Resumo do Journal</h2>
       <div id="journal-summary">
@@ -50,6 +88,97 @@
     <p>Flow On © 2025 — Planeje. Execute. Evolua.</p>
   </footer>
 
+  <!-- seu JS atual da home -->
   <script src="assets/js/app.js"></script>
+
+  <!-- NOVO: lógica dos cards + 21 dias -->
+  <script>
+  (function(){
+    const KEY='flowon';
+    let S={}; try{ S=JSON.parse(localStorage.getItem(KEY)||'{}'); }catch(e){S={};}
+    const J=()=>{ S.journal ||= {}; return S.journal; };
+
+    const toISO=d=>d.toISOString().slice(0,10);
+    const todayISO=()=>{const d=new Date(); d.setHours(0,0,0,0); return toISO(d);};
+    const addDays=(iso,n)=>{const d=new Date(iso+'T00:00:00'); d.setDate(d.getDate()+n); return toISO(d);};
+    const firstDow=(iso=todayISO())=>{const d=new Date(iso+'T00:00:00'); const k=(d.getDay()+6)%7; d.setDate(d.getDate()-k); return toISO(d);};
+    const qKey=(y,q)=>`${y}-T${q}`, qLabel=(y,q)=>`T${q} de ${y}`;
+    const quarter=iso=>{const d=new Date(iso+'T00:00:00'); return {year:d.getFullYear(), q:Math.floor(d.getMonth()/3)+1};};
+
+    // KPIs
+    (function(){
+      let habitsPct='—', d7='0', posts7='0';
+      try{
+        const H=J().habits;
+        if(H?.items?.length){
+          const ids=H.items.map(h=>h.id||h.key||h.title);
+          const start=firstDow(); let done=0,total=ids.length*7;
+          for(let i=0;i<7;i++){
+            const d=addDays(start,i), m=H.marks?.[d];
+            if(m) ids.forEach(id=>{ if(Array.isArray(m)?m.includes(id):!!m[id]) done++; });
+          }
+          habitsPct= total? Math.round(done/total*100)+'%':'—';
+        }
+      }catch(e){}
+      try{
+        const D=J().daily?.byDate||{}; let c=0;
+        for(let i=0;i<7;i++){ const d=addDays(todayISO(),-i); if(D[d]&&(D[d].focus||D[d].notes||D[d].mits||D[d].gratitude)) c++; }
+        d7=String(c);
+      }catch(e){}
+      try{
+        const sched=(S.content?.scheduled)||(S.themes?.scheduled)||{}; let c=0;
+        for(let i=0;i<7;i++){ const d=addDays(todayISO(),i); const a=sched[d]; if(Array.isArray(a)) c+=a.length; else if(a&&typeof a==='object') c+=Object.keys(a).length; }
+        posts7=String(c);
+      }catch(e){}
+      document.getElementById('kpi-habits').textContent = habitsPct;
+      document.getElementById('kpi-dailies').textContent = d7;
+      document.getElementById('kpi-posts').textContent = posts7;
+    })();
+
+    // Trimestral
+    (function(){
+      const {year,q}=quarter(todayISO());
+      const notes = J().tri?.byQuarter?.[qKey(year,q)] || '';
+      document.getElementById('quarter-label').textContent = `(${qLabel(year,q)})`;
+      document.getElementById('quarter-notes').textContent = notes || 'Sem anotações do trimestre ainda.';
+    })();
+
+    // 21 dias de hábitos (grade compacta)
+    (function(){
+      const H=J().habits;
+      const btn=document.getElementById('btn-habits-21');
+      const panel=document.getElementById('habits-21-panel');
+      if(!btn) return;
+
+      if(!H?.items?.length){
+        btn.style.display='none';
+        return;
+      }
+
+      function build(){
+        panel.innerHTML='';
+        H.items.forEach(h=>{
+          const id=h.id||h.key||h.title;
+          const row=document.createElement('div'); row.className='fo-habit-row';
+          row.innerHTML=`<div class="fo-habit-name">${h.title||id}</div>`;
+          const grid=document.createElement('div'); grid.className='fo-dots';
+          for(let i=20;i>=0;i--){
+            const d=addDays(todayISO(),-i), m=H.marks?.[d];
+            const on = m ? (Array.isArray(m)?m.includes(id):!!m[id]) : false;
+            const dot=document.createElement('div'); dot.className='fo-dot'+(on?' on':''); dot.title=d;
+            grid.appendChild(dot);
+          }
+          row.appendChild(grid); panel.appendChild(row);
+        });
+      }
+
+      btn.onclick=()=>{
+        const open = panel.style.display!=='none';
+        if(open){ panel.style.display='none'; btn.textContent='Ver 21 dias'; }
+        else { build(); panel.style.display='block'; btn.textContent='Ocultar'; }
+      };
+    })();
+  })();
+  </script>
 </body>
 </html>
