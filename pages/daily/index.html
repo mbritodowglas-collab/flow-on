@@ -22,7 +22,7 @@
   <section class="card" id="tab-daily">
     <h2>Daily Log</h2>
 
-    <div class="form" style="max-width:800px">
+    <div class="form" id="dailyForm" style="max-width:800px">
       <label>Data</label>
       <select id="dailyDate"></select>
 
@@ -42,8 +42,9 @@
       <textarea id="dailyNotes" rows="6" placeholder="Anotações do dia"></textarea>
 
       <div style="margin-top:8px; display:flex; gap:10px; flex-wrap:wrap">
-        <button id="btnSaveDaily" class="btn">💾 Salvar Daily</button>
-        <button id="btnDeleteDaily" class="btn danger">🗑️ Excluir dia</button>
+        <!-- type="button" evita qualquer submissão implícita -->
+        <button id="btnSaveDaily" type="button" class="btn">💾 Salvar Daily</button>
+        <button id="btnDeleteDaily" type="button" class="btn danger">🗑️ Excluir dia</button>
       </div>
     </div>
 
@@ -51,7 +52,7 @@
 
     <div style="display:flex; align-items:center; gap:10px; margin-top:6px; flex-wrap:wrap">
       <h3 style="margin:0">Últimos registros</h3>
-      <button id="btnToggleDailyMonth" class="btn small">Ver todos do mês</button>
+      <button id="btnToggleDailyMonth" type="button" class="btn small">Ver todos do mês</button>
     </div>
 
     <div id="dailyRecent" style="margin-top:10px"></div>
@@ -67,7 +68,7 @@
   <p>Flow On © 2025 — Planeje. Execute. Evolua.</p>
 </footer>
 
-<!-- Core e lógica -->
+<!-- Core e lógica (garanta v=2 para forçar atualização do cache) -->
 <script src="../../assets/js/core.js?v=1"></script>
 <script src="../../assets/js/daily.js?v=2"></script>
 </body>
