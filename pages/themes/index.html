@@ -64,12 +64,15 @@
     <!-- ====== BLOCO 1: BANCO DE IDEIAS ====== -->
     <section class="tile t-ideas">
       <div class="section-title">
-        <h3><span class="emoji">💡</span> Banco de Ideias</h3>
-        <div class="flex">
-          <button id="btnAddIdea" class="btn small">+ Ideia</button>
-          <span class="pill" id="ideasCount">0 itens</span>
-        </div>
-      </div>
+  <h3><span class="emoji">💡</span> Banco de Ideias</h3>
+  <div class="flex">
+    <button id="btnAddIdea" class="btn small">+ Ideia</button>
+    <span class="badge" id="ideasCount">0 itens</span>
+  </div>
+</div>
+<div id="ideasList" class="list">
+  <div class="empty">Sem ideias por aqui. Clique em <b>+ Ideia</b> para adicionar.</div>
+</div>
       <!-- Lista de ideias (somente leitura). cada item tem ações: mover p/ rascunho, excluir -->
       <div id="ideasList" class="list">
         <!-- itens são injetados via JS. Exemplo de item:
