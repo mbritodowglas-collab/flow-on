@@ -33,39 +33,33 @@
   </style>
 </head>
 <body>
-<header class="navbar">
-  <div class="nav-inner" style="justify-content:space-between">
-    <a href="../journal/" class="btn small">⬅️ Voltar ao Journal</a>
-    <nav class="menu">
-      <a href="../../index.html">🏠 Home</a>
-      <a href="../reports/">📊 Relatórios</a>
-    </nav>
-  </div>
-</header>
 
-<main class="container">
-  <section class="card">
-    <div class="card-head">
-      <h2 style="margin:0">Hábitos</h2>
-      <button id="btnAdd" class="btn small">+ Hábito</button>
-    </div>
-    <div id="habList"></div>
-  </section>
-</main>
+  <!-- Header & Nav globais são injetados automaticamente -->
+  <script src="../../assets/js/include-layout.js" defer></script>
 
-<footer class="footer"><p>Flow On © 2025 — Planeje. Execute. Evolua.</p></footer>
+  <main class="container">
+    <section class="card">
+      <div class="card-head">
+        <h2 style="margin:0">Hábitos</h2>
+        <button id="btnAdd" class="btn small">+ Hábito</button>
+      </div>
+      <div id="habList"></div>
+    </section>
+  </main>
 
-<!-- Lógica da página (mantido) -->
-<script src="../../assets/js/habits.js?v=3"></script>
+  <footer class="footer"><p>Flow On © 2025 — Planeje. Execute. Evolua.</p></footer>
 
-<!-- Registro do Service Worker (neutro; não faz cache) -->
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('../../service-worker.js', { scope: '../../' })
-        .catch(err => console.warn('[PWA] SW error:', err));
-    });
-  }
-</script>
+  <!-- Lógica da página (mantido) -->
+  <script src="../../assets/js/habits.js?v=3"></script>
+
+  <!-- Registro do Service Worker (neutro; não faz cache) -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('../../service-worker.js', { scope: '../../' })
+          .catch(err => console.warn('[PWA] SW error:', err));
+      });
+    }
+  </script>
 </body>
 </html>
