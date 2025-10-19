@@ -35,17 +35,31 @@ const Data = {
   get(){ return this._s }
 };
 
-/* Utils */
-const toISO = d => new Date(d).toISOString().slice(0,10);
+/* Utils — datas em HORÁRIO LOCAL (sem UTC) */
+const toLocalISO = (date) => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth()+1).padStart(2,'0');
+  const d = String(date.getDate()).padStart(2,'0');
+  return `${y}-${m}-${d}`;
+};
 function weekRange(date){
-  const d = new Date(date); const day = (d.getDay()+6)%7; // seg=0
-  const monday = new Date(d); monday.setDate(d.getDate()-day);
-  return [...Array(7)].map((_,i)=>{ const x = new Date(monday); x.setDate(monday.getDate()+i); return toISO(x) });
+  const d = new Date(date);
+  // semana começa na segunda
+  const jsDay = d.getDay();                  // 0=dom,1=seg...
+  const offset = (jsDay + 6) % 7;            // 0=seg,6=dom
+  const monday = new Date(d); monday.setDate(d.getDate()-offset);
+
+  return [...Array(7)].map((_,i)=>{
+    const x = new Date(monday); x.setDate(monday.getDate()+i);
+    return toLocalISO(x);
+  });
 }
 function weekKey(date=new Date()){
-  const d=new Date(date);
-  const onejan=new Date(d.getFullYear(),0,1);
-  const week=Math.ceil((((d-onejan)/86400000)+onejan.getDay()+1)/7);
+  // chave só para hábitos (não impacta bug)
+  const d = new Date(date);
+  const onejan = new Date(d.getFullYear(),0,1);
+  const dayOfYear = Math.floor((d - onejan) / 86400000) + 1;
+  const week = Math.ceil((dayOfYear + ((onejan.getDay()+6)%7)) / 7);
   return `${d.getFullYear()}-W${String(week).padStart(2,'0')}`;
 }
 
@@ -78,7 +92,7 @@ function renderContentSummary(){
   const el = document.getElementById('content-summary');
   const s = Data.get();
   const dates = weekRange(new Date());
-  const today = toISO(new Date());
+  const today = toLocalISO(new Date());
 
   const statusBadge = (dateStr)=>{
     if(!dateStr) return '';
