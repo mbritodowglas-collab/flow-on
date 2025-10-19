@@ -1,170 +1,258 @@
-/* ====== Flow On — Journal ====== */
-const STORE_KEY = 'flowon.v1';
+/* ===== Flow On — Journal (Hábitos, Daily, Monthly Agenda, Trimestral) ===== */
+const STORE_KEY = 'flowon.v2';
+
 const Data = {
-  _s: { habits: [], journal: { daily: [] }, themes: [] },
+  _s: { habits: [], journal: { daily: [], month: { items: [] }, triNotes: '' } },
   load(){
-    try{
-      const raw = localStorage.getItem(STORE_KEY);
-      if(raw) this._s = JSON.parse(raw);
-      // seeds
-      if(!this._s.habits?.length){
-        this._s.habits = [
-          {id:'h1', name:'Planejar dia anterior'},
-          {id:'h2', name:'Treinar'},
-          {id:'h3', name:'Meditar 5 min'}
-        ];
-      }
-      if(!this._s.journal) this._s.journal = { daily: [] };
-    }catch(e){ console.error(e) }
+    const raw = localStorage.getItem(STORE_KEY);
+    this._s = raw ? JSON.parse(raw) : { habits: [], journal: { daily: [], month: { items: [] }, triNotes: '' } };
+
+    // defaults
+    this._s.habits = this._s.habits || [];
+    this._s.journal = this._s.journal || { daily: [], month: { items: [] }, triNotes: '' };
+    this._s.journal.month = this._s.journal.month || { items: [] };
+    this._s.journal.month.items = this._s.journal.month.items || [];
+    this._s.journal.daily = this._s.journal.daily || [];
+    this._s.journal.triNotes = this._s.journal.triNotes || '';
+    this.save();
   },
   save(){ localStorage.setItem(STORE_KEY, JSON.stringify(this._s)) },
   get(){ return this._s }
 };
 
-/* utils */
-const toISO = d => new Date(d).toISOString().slice(0,10);
-function weekRange(date){
-  const d = new Date(date); const day = (d.getDay()+6)%7; // seg=0
-  const monday = new Date(d); monday.setDate(d.getDate()-day);
-  return [...Array(7)].map((_,i)=>{ const x = new Date(monday); x.setDate(monday.getDate()+i); return toISO(x) });
+/* utils datas locais */
+const toLocalISO = (date) => {
+  const y = date.getFullYear(), m = String(date.getMonth()+1).padStart(2,'0'), d = String(date.getDate()).padStart(2,'0');
+  return `${y}-${m}-${d}`;
+};
+const parseLocal = (iso) => { const [y,m,d]=(iso||'').split('-').map(Number); return new Date(y,(m||1)-1,d||1); };
+function daysBack(n=14){
+  const end = new Date();
+  return [...Array(n)].map((_,i)=> toLocalISO(new Date(end.getFullYear(), end.getMonth(), end.getDate()-i)) );
 }
-function weekKey(date=new Date()){
-  const d=new Date(date); const onejan=new Date(d.getFullYear(),0,1);
-  const week=Math.ceil((((d-onejan)/86400000)+onejan.getDay()+1)/7);
-  return `${d.getFullYear()}-W${String(week).padStart(2,'0')}`;
+function daysOfMonth(date=new Date()){
+  const y = date.getFullYear(), m = date.getMonth();
+  const first = new Date(y, m, 1);
+  const last = new Date(y, m+1, 0).getDate();
+  return [...Array(last)].map((_,i)=> toLocalISO(new Date(y, m, i+1)) );
 }
 
-/* nav tabs */
-function setupTabs(){
-  document.querySelectorAll('.tab-btn').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-      document.querySelectorAll('.tab-view').forEach(v=>v.classList.remove('active'));
+/* ===== Tabs ===== */
+function bindTabs(){
+  document.querySelectorAll('.tab').forEach(btn=>{
+    btn.onclick = ()=>{
+      document.querySelectorAll('.tab').forEach(b=> b.classList.remove('active'));
+      document.querySelectorAll('.tab-pane').forEach(p=> p.classList.remove('active'));
       btn.classList.add('active');
       document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
-      if(btn.dataset.tab==='monthly') renderMonthly();
-      if(btn.dataset.tab==='daily') renderDailyList();
-      if(btn.dataset.tab==='habits') renderHabits();
-    });
+    };
   });
 }
 
-/* HABITS */
-function renderHabits(){
-  const s = Data.get(); const wk = weekKey();
-  const dates = weekRange(new Date());
-  const box = document.getElementById('habitsTable');
-  box.innerHTML = '';
+/* ===== Hábitos ===== */
+function drawHabits(){
+  const box = document.getElementById('habitsList'); box.innerHTML='';
+  const s = Data.get();
+
+  if(!s.habits.length){
+    box.innerHTML = `<div class="muted">Sem hábitos ainda. Clique em <b>+ Hábito</b>.</div>`;
+    return;
+  }
 
   s.habits.forEach(h=>{
-    h.checks = h.checks || {}; h.checks[wk] = h.checks[wk] || Array(7).fill(false);
-    const row = document.createElement('div'); row.className = 'h-row';
-    const left = document.createElement('div'); left.className = 'h-name'; left.textContent = h.name;
-    const right = document.createElement('div'); right.className = 'h-dots';
-
-    h.checks[wk].forEach((v,i)=>{
-      const b = document.createElement('button');
-      b.className = 'ring-dot'+(v?' done':''); b.title = dates[i];
-      b.addEventListener('click', ()=>{ h.checks[wk][i]=!h.checks[wk][i]; Data.save(); renderHabits(); });
-      right.appendChild(b);
-    });
-
-    const pct = Math.round(100 * h.checks[wk].filter(Boolean).length / 7);
-    const pctEl = document.createElement('div'); pctEl.className='h-pct'; pctEl.textContent = pct+'%';
-    const wrap = document.createElement('div'); wrap.style.display='flex'; wrap.style.gap='8px'; wrap.style.alignItems='center';
-    wrap.appendChild(right); wrap.appendChild(pctEl);
-
-    row.appendChild(left); row.appendChild(wrap);
+    const row = document.createElement('div'); row.className='list-day';
+    row.innerHTML = `
+      <div class="list-day-head">
+        <span class="small">${h.name}</span>
+        <span><button class="btn small" data-del="${h.id}">Excluir</button></span>
+      </div>`;
+    row.querySelector('[data-del]').onclick = ()=>{
+      s.habits = s.habits.filter(x=>x.id!==h.id); Data.save(); drawHabits();
+    };
     box.appendChild(row);
   });
-
-  document.getElementById('btnAddHabit').onclick = ()=>{
-    const name = prompt('Nome do hábito:');
-    if(!name) return;
-    s.habits.push({ id:'h_'+Date.now(), name });
-    Data.save(); renderHabits();
-  };
+}
+function addHabit(){
+  const title = prompt('Nome do hábito:'); if(!title) return;
+  const s = Data.get(); s.habits.push({id:'h_'+Date.now(), name:title});
+  Data.save(); drawHabits();
 }
 
-/* DAILY */
-function initDailyForm(){
-  const d = toISO(new Date());
-  document.getElementById('dlDate').value = d;
-  document.getElementById('btnSaveDaily').onclick = ()=>{
-    const s = Data.get();
-    const date = document.getElementById('dlDate').value || toISO(new Date());
-    const item = {
-      date,
-      focus: document.getElementById('dlFocus').value,
-      mits: document.getElementById('dlMITs').value,
-      gratidao: document.getElementById('dlGratidao').value,
-      mood: Number(document.getElementById('dlMood').value || 0),
-      notes: document.getElementById('dlNotes').value
-    };
-    const ix = s.journal.daily.findIndex(x=>x.date===date);
-    if(ix>=0) s.journal.daily[ix]=item; else s.journal.daily.push(item);
-    Data.save(); renderDailyList(); alert('Daily salvo!');
-  };
-}
-function renderDailyList(){
+/* ===== Daily Log ===== */
+function drawDaily(){
   const s = Data.get();
-  const box = document.getElementById('dailyList'); box.innerHTML='';
-  const last = s.journal.daily.slice(-7).reverse();
-  if(!last.length){ box.innerHTML = `<div class="muted">Sem registros ainda.</div>`; return; }
-  last.forEach(d=>{
+  const sel = document.getElementById('dailyDate'); sel.innerHTML='';
+  const days = daysBack(14).reverse(); // 14 dias navegáveis
+
+  days.forEach(d=>{
+    const opt = document.createElement('option');
+    opt.value = d; opt.textContent = parseLocal(d).toLocaleDateString('pt-BR');
+    if(d===toLocalISO(new Date())) opt.selected = true;
+    sel.appendChild(opt);
+  });
+
+  function fill(date){
+    const reg = s.journal.daily.find(r=>r.date===date);
+    document.getElementById('dailyFocus').value = reg?.focus || '';
+    document.getElementById('dailyMITs').value  = reg?.mits || '';
+    document.getElementById('dailyGrat').value  = reg?.grat || '';
+    document.getElementById('dailyMood').value  = reg?.mood || '';
+    document.getElementById('dailyNotes').value = reg?.notes || '';
+  }
+
+  sel.onchange = ()=> fill(sel.value);
+  fill(sel.value);
+
+  document.getElementById('btnSaveDaily').onclick = ()=>{
+    const date = sel.value;
+    const reg = {
+      date,
+      focus: document.getElementById('dailyFocus').value.trim(),
+      mits : document.getElementById('dailyMITs').value.trim(),
+      grat : document.getElementById('dailyGrat').value.trim(),
+      mood : Number(document.getElementById('dailyMood').value||0),
+      notes: document.getElementById('dailyNotes').value.trim()
+    };
+    const ix = s.journal.daily.findIndex(r=>r.date===date);
+    if(ix>=0) s.journal.daily[ix]=reg; else s.journal.daily.push(reg);
+    Data.save();
+    drawDailyRecent();
+    alert('Daily salvo!');
+  };
+
+  drawDailyRecent();
+}
+function drawDailyRecent(){
+  const s = Data.get();
+  const box = document.getElementById('dailyRecent'); box.innerHTML='';
+  const last = [...s.journal.daily].sort((a,b)=> (a.date<b.date?1:-1)).slice(0,5);
+  if(!last.length){ box.innerHTML = `<div class="muted">Sem registros recentes.</div>`; return; }
+  last.forEach(r=>{
     const card = document.createElement('div'); card.className='list-day';
     card.innerHTML = `
       <div class="list-day-head">
-        <span>${new Date(d.date).toLocaleDateString('pt-BR')}</span>
-        <span class="muted">Humor: ${d.mood||'—'}</span>
+        <span>${parseLocal(r.date).toLocaleDateString('pt-BR')}</span>
+        <span class="muted">Humor: ${r.mood||'—'}</span>
       </div>
-      <div class="small">Foco: ${d.focus||'—'}</div>
-      <div class="muted small">Gratidão: ${d.gratidao||'—'}</div>
-    `;
+      <div class="small">Foco: <b>${r.focus||'—'}</b></div>
+      <div class="small">Gratidão: <b>${r.grat||'—'}</b></div>`;
     box.appendChild(card);
   });
 }
 
-/* MONTHLY */
-function renderMonthly(){
+/* ===== Monthly Log — Agenda do mês ===== */
+function addMonthItem(){
   const s = Data.get();
-  const thisMonth = new Date().toISOString().slice(0,7);
-  const monthDailies = s.journal.daily.filter(d=> (d.date||'').startsWith(thisMonth));
-  const moods = monthDailies.map(d=>d.mood).filter(Boolean);
-  const avg = moods.length? (moods.reduce((a,b)=>a+b,0)/moods.length).toFixed(1) : '—';
+  const title = document.getElementById('mTitle').value.trim();
+  const date  = document.getElementById('mDate').value;
+  const notes = document.getElementById('mNotes').value.trim();
+  if(!title){ alert('Dê um título ao item.'); return; }
+  if(!date){ alert('Escolha uma data.'); return; }
 
-  const counts = {};
-  monthDailies.forEach(d=>{
-    (d.gratidao||'').split(/;|,|\n/).map(x=>x.trim()).filter(Boolean)
-      .forEach(g=>{ counts[g]=(counts[g]||0)+1 });
+  s.journal.month.items.push({
+    id: 'm_'+Date.now(),
+    title, date, notes, done:false, archived:false
   });
-  const top = Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  Data.save();
+  document.getElementById('mTitle').value='';
+  document.getElementById('mDate').value='';
+  document.getElementById('mNotes').value='';
+  drawMonthList();
+}
+function drawMonthList(){
+  const s = Data.get();
+  const box = document.getElementById('monthList'); box.innerHTML='';
+  const currentMonthDays = daysOfMonth(new Date());
 
-  const box = document.getElementById('monthlySummary');
-  const pills = top.length
-    ? top.map(([k,v])=> `<span class="pill">${k} <span class="muted">(x${v})</span></span>`).join('')
-    : `<span class="muted">Sem registros de gratidão ainda.</span>`;
-  box.innerHTML = `
-    <div class="small" style="margin-bottom:6px">Humor médio do mês: <b>${avg}</b></div>
-    <div><div class="small" style="opacity:.8;margin-bottom:4px">Marcos de Gratidão (Top 5)</div>${pills}</div>
-  `;
+  let any = false;
+  currentMonthDays.forEach(d=>{
+    const items = s.journal.month.items.filter(it=> !it.archived && it.date===d);
+    if(!items.length) return;
+    any = true;
+
+    const wrap = document.createElement('div'); wrap.className='list-day';
+    wrap.innerHTML = `
+      <div class="list-day-head">
+        <span>${parseLocal(d).toLocaleDateString('pt-BR',{weekday:'short', day:'2-digit'})}</span>
+        <span class="muted">mês</span>
+      </div>`;
+    const list = document.createElement('div');
+
+    items.forEach(it=>{
+      const row = document.createElement('div'); row.className='small badge';
+      row.style.display='flex'; row.style.alignItems='center'; row.style.justifyContent='space-between'; row.style.margin='4px 0 0';
+      row.innerHTML = `
+        <span>${it.title}</span>
+        <span style="display:flex; gap:6px">
+          <button class="btn small" data-done="${it.id}">${it.done?'Desmarcar':'Concluir'}</button>
+          <button class="btn small" data-edit="${it.id}">Editar</button>
+          <button class="btn small" data-del="${it.id}">Excluir</button>
+        </span>`;
+
+      row.querySelector('[data-done]').onclick = ()=>{
+        it.done = !it.done; Data.save(); drawMonthList();
+      };
+      row.querySelector('[data-edit]').onclick = ()=>{
+        const nt = prompt('Título', it.title||'') ?? it.title;
+        if(nt===null) return;
+        const nd = prompt('Data (AAAA-MM-DD)', it.date||'') ?? it.date;
+        if(nd===null) return;
+        const nn = prompt('Notas', it.notes||'') ?? it.notes;
+        it.title = nt.trim(); it.date = nd; it.notes = nn;
+        Data.save(); drawMonthList();
+      };
+      row.querySelector('[data-del]').onclick = ()=>{
+        if(confirm('Excluir item do mês?')){
+          s.journal.month.items = s.journal.month.items.filter(x=>x.id!==it.id);
+          Data.save(); drawMonthList();
+        }
+      };
+
+      list.appendChild(row);
+
+      if(it.notes){
+        const notes = document.createElement('div');
+        notes.className='small';
+        notes.style.margin='4px 0 0 0';
+        notes.style.opacity='.8';
+        notes.textContent = it.notes;
+        list.appendChild(notes);
+      }
+    });
+
+    wrap.appendChild(list);
+    box.appendChild(wrap);
+  });
+
+  if(!any){
+    box.innerHTML = `<div class="muted">Sem itens neste mês. Adicione acima.</div>`;
+  }
 }
 
-/* QUARTER */
-function initQuarter(){ /* campos livres — mantidos no DOM; se quiser, podemos salvar aqui também depois */ }
+/* ===== Trimestral ===== */
+function saveTri(){
+  const s = Data.get();
+  s.journal.triNotes = document.getElementById('triNotes').value;
+  Data.save(); alert('Trimestral salvo!');
+}
 
-/* boot */
+/* ===== Boot ===== */
 document.addEventListener('DOMContentLoaded', ()=>{
-  // marca menu ativo
-  document.querySelectorAll('.menu a').forEach(a=>{
-    a.classList.toggle('active', a.getAttribute('href') === './' || a.getAttribute('href')?.endsWith('/journal/'));
-  });
-
+  bindTabs();
   Data.load();
-  setupTabs();
-  renderHabits();
-  initDailyForm();
-  renderDailyList();
-  renderMonthly();
-  initQuarter();
+
+  // Hábitos
+  drawHabits();
+  document.getElementById('btnAddHabit').onclick = addHabit;
+
+  // Daily
+  drawDaily();
+
+  // Monthly
+  document.getElementById('btnAddMonthItem').onclick = addMonthItem;
+  drawMonthList();
+
+  // Trimestral
+  document.getElementById('btnSaveTri').onclick = saveTri;
+  document.getElementById('triNotes').value = Data.get().journal.triNotes || '';
 });
