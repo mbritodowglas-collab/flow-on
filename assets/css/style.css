@@ -135,3 +135,20 @@ h3{ margin: 16px 0 8px; }
 /* Corrige estouros horizontais de botões/controles */
 #tab-monthly .card-head{ gap: 10px; flex-wrap: wrap; }
 
+assets/
+  css/style.css
+  js/core.js        <-- novo (estado + helpers)
+  js/habits.js      <-- novo
+  js/daily.js       <-- novo
+  js/monthly.js     <-- novo
+  js/quarterly.js   <-- novo
+pages/
+  habits/index.html     <-- novo
+  daily/index.html      <-- novo
+  monthly/index.html    <-- novo
+  quarterly/index.html  <-- novo
+  reports/index.html    (já criado)
+  themes/...
+  settings/...
+index.html              (Home)
+
