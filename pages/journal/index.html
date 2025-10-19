@@ -1,17 +1,36 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="UTF-8">
-  <meta http-equiv="refresh" content="2; url=../habits/" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Flow On — Journal</title>
-  <style>
-    body {font-family: sans-serif; background:#0b0b0b; color:#eee; display:flex; align-items:center; justify-content:center; height:100vh; flex-direction:column;}
-    a{color:#e0a96d; text-decoration:none; border-bottom:1px solid #e0a96d;}
-  </style>
+  <link rel="stylesheet" href="../../assets/css/style.css" />
 </head>
 <body>
-  <h2>O Journal foi dividido em 4 partes</h2>
-  <p>Você será redirecionado para o novo painel de <b>Hábitos</b>...</p>
-  <p><a href="../habits/">Ir agora</a></p>
+  <header class="navbar">
+    <div class="nav-inner">
+      <nav class="menu">
+        <a href="../../index.html">🏠 Home</a>
+        <a href="../themes/">🎬 Temas</a>
+        <a href="../reports/">📊 Relatórios</a>
+        <a href="../settings/">⚙️ Configurações</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card" style="text-align:center">
+      <h1>Flow On — Journal</h1>
+      <p>Selecione um módulo:</p>
+      <div class="menu-grid">
+        <a href="../habits/" class="btn big">✅ Hábitos</a>
+        <a href="../daily/" class="btn big">🗒️ Daily</a>
+        <a href="../monthly/" class="btn big">🗓️ Monthly</a>
+        <a href="../quarterly/" class="btn big">📆 Trimestral</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer"><p>Flow On © 2025 — Planeje. Execute. Evolua.</p></footer>
 </body>
 </html>
