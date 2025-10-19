@@ -152,3 +152,30 @@ pages/
   settings/...
 index.html              (Home)
 
+/* --- Refinos de Conteúdos (Temas) --- */
+.section-title { display:flex; align-items:center; justify-content:space-between; gap:10px; margin:16px 0 8px; }
+.section-title .muted { opacity:.75; }
+
+.badge { display:inline-flex; align-items:center; gap:6px;
+  padding:4px 10px; border:1px solid var(--border); border-radius:999px; font-size:.85rem; opacity:.85; }
+
+.filters { position:sticky; top:64px; z-index:5; display:flex; gap:8px; overflow:auto; padding:6px 2px; background:linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,0)); }
+.filters .btn.small { white-space:nowrap; }
+.filters .btn.small.active { outline:2px solid rgba(255,255,255,.18); background:rgba(255,255,255,.06); }
+
+.list .empty {
+  border:1px dashed var(--border); border-radius:12px; padding:14px; text-align:center; opacity:.75;
+}
+
+.right-link { margin-left:auto; display:inline-flex; align-items:center; gap:6px; opacity:.9; }
+.right-link:hover { opacity:1; text-decoration:underline; }
+
+.kpi-range { font-size:.85rem; opacity:.8; padding:4px 10px; border:1px solid var(--border); border-radius:999px; }
+
+.fab {
+  position:fixed; right:16px; bottom:18px; width:54px; height:54px;
+  display:flex; align-items:center; justify-content:center; border-radius:50%;
+  background:#111; border:1px solid var(--border); box-shadow:0 8px 30px rgba(0,0,0,.35);
+  font-size:22px; line-height:1; text-decoration:none;
+}
+
