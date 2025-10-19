@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Flow On — Monthly Log</title>
+  <link rel="stylesheet" href="../../assets/css/style.css" />
+  <link rel="icon" href="../../assets/img/favicon-32.png" />
+</head>
+<body>
+<header class="navbar">
+  <div class="nav-inner">
+    <div class="logo"><img src="../../assets/img/logo.svg" alt="logo" /><span>Flow On</span></div>
+    <nav class="menu">
+      <a href="../../index.html">🏠 Home</a>
+      <a href="../habits/">✅ Hábitos</a>
+      <a href="../daily/">🗒️ Daily</a>
+      <a href="./" class="active">🗓️ Monthly</a>
+      <a href="../quarterly/">📆 Trimestral</a>
+      <a href="../reports/">📊 Relatórios</a>
+      <a href="../themes/">🎬 Temas</a>
+      <a href="../settings/">⚙️ Configurações</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+  <section class="card">
+    <div class="card-head" style="align-items:flex-end; gap:10px; flex-wrap:wrap">
+      <h2>Monthly Log</h2>
+
+      <div class="btn-group">
+        <button id="btnPrevMonth" class="btn small">⬅️ Mês anterior</button>
+        <div id="monthLabel" class="small" style="padding:6px 10px; border:1px solid var(--border); border-radius:10px"></div>
+        <button id="btnNextMonth" class="btn small">Próximo mês ➡️</button>
+      </div>
+
+      <div class="btn-group">
+        <select id="jumpYear" class="small"></select>
+        <select id="jumpMonth" class="small">
+          <option value="0">Jan</option><option value="1">Fev</option><option value="2">Mar</option>
+          <option value="3">Abr</option><option value="4">Mai</option><option value="5">Jun</option>
+          <option value="6">Jul</option><option value="7">Ago</option><option value="8">Set</option>
+          <option value="9">Out</option><option value="10">Nov</option><option value="11">Dez</option>
+        </select>
+        <button id="btnJump" class="btn small">Ir</button>
+        <button id="btnToday" class="btn small">Hoje</button>
+      </div>
+
+      <div id="monthFilters" class="btn-group">
+        <button class="btn small active" data-filter="all">Todos</button>
+        <button class="btn small" data-filter="pending">Pendentes</button>
+        <button class="btn small" data-filter="done">Concluídos</button>
+      </div>
+
+      <div id="monthCounters" class="small muted"></div>
+    </div>
+
+    <div class="form" style="max-width:900px">
+      <div class="grid-2">
+        <div>
+          <label>Título</label>
+          <input id="mTitle" placeholder="Ex.: Revisar planejamento" />
+        </div>
+        <div>
+          <label>Data</label>
+          <input id="mDate" type="date" />
+        </div>
+      </div>
+      <label>Observações</label>
+      <textarea id="mNotes" rows="4" placeholder="Contexto, checklist, links…"></textarea>
+      <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap">
+        <button id="btnAddMonthItem" class="btn">+ Adicionar</button>
+        <button id="btnMoveAllNextMonth" class="btn">Mover pendentes → próximo mês</button>
+      </div>
+    </div>
+
+    <h3 style="margin-top:16px">Agenda do mês (itens)</h3>
+    <div id="monthList"></div>
+  </section>
+</main>
+
+<footer class="footer"><p>Flow On © 2025 — Planeje. Execute. Evolua.</p></footer>
+
+<script src="../../assets/js/core.js?v=1"></script>
+<script src="../../assets/js/monthly.js?v=1"></script>
+</body>
+</html>
