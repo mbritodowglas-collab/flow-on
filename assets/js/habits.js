@@ -37,11 +37,14 @@
     const isoToday = todayISO();
     const days = week(isoToday);
     for(const d of days){
-      if(d >= isoToday) continue;
+      if(d >= isoToday) continue; // não mexe em hoje/ futuro
       H.marks[d] ||= {};
       for(const it of H.items){
+        // só marca 0 se não houver marca (nem 1 nem 0)
         if(!(it.id in H.marks[d])) H.marks[d][it.id] = 0; // vermelho
       }
+      // limpeza: se por algum motivo ficou vazio, remove o dia
+      if (Object.keys(H.marks[d]).length === 0) delete H.marks[d];
     }
   }
 
@@ -92,9 +95,12 @@
       btn.onclick = ()=>{
         const id = btn.getAttribute('data-del');
         if(!confirm('Excluir esse hábito?')) return;
-        S.journal.habits.items = S.journal.habits.items.filter(h=>h.id!==id);
-        for(const d in S.journal.habits.marks){
-          if(S.journal.habits.marks[d] && (id in S.journal.habits.marks[d])) delete S.journal.habits.marks[d][id];
+        H.items = H.items.filter(h=>h.id!==id);
+        for(const d in H.marks){
+          if(H.marks[d] && (id in H.marks[d])) {
+            delete H.marks[d][id];
+            if (Object.keys(H.marks[d]).length === 0) delete H.marks[d]; // limpeza
+          }
         }
         save(); render();
       };
@@ -105,9 +111,14 @@
       dot.onclick = ()=>{
         const id = dot.getAttribute('data-id');
         const d  = dot.getAttribute('data-date');
-        S.journal.habits.marks[d] ||= {};
-        S.journal.habits.marks[d][id] = S.journal.habits.marks[d][id] === 1 ? undefined : 1;
-        if(S.journal.habits.marks[d][id] === undefined) delete S.journal.habits.marks[d][id];
+        H.marks[d] ||= {};
+        // alterna 1 ↔ (sem chave)
+        if (H.marks[d][id] === 1) {
+          delete H.marks[d][id];
+          if (Object.keys(H.marks[d]).length === 0) delete H.marks[d]; // limpeza se não sobrou nada no dia
+        } else {
+          H.marks[d][id] = 1;
+        }
         save(); render();
       };
     });
@@ -115,7 +126,9 @@
 
   // ---------- header ----------
   function bindHeader(){
-    document.getElementById('btnAdd').onclick = ()=>{
+    const addBtn = document.getElementById('btnAdd');
+    if (!addBtn) return;
+    addBtn.onclick = ()=>{
       const title = prompt('Nome do hábito:');
       if(!title) return;
       S.journal.habits.items.push({ id: uid(), title });
