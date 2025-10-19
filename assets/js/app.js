@@ -1,37 +1,25 @@
 /* ====== Flow On — Home (visão geral, semana com status) ====== */
 
-const STORE_KEY = 'flowon.v2'; // bump de versão p/ evitar cache do v1
+const STORE_KEY = 'flowon.v2';
 
 const Data = {
-  _s: { habits: [], journal: { daily: [] }, themes: [], posts: [] },
+  _s: { habits: [], journal: { daily: [], month: { items: [] } }, themes: [], posts: [] },
   load(){
     try{
-      // migração v1 -> v2 (se precisar)
-      const rawV2 = localStorage.getItem(STORE_KEY);
-      if(rawV2){ this._s = JSON.parse(rawV2); return; }
+      const raw = localStorage.getItem(STORE_KEY);
+      if(raw){ this._s = JSON.parse(raw); }
 
-      const rawV1 = localStorage.getItem('flowon.v1');
-      if(rawV1){
-        const old = JSON.parse(rawV1);
-        this._s.habits  = old.habits || [];
-        this._s.journal = old.journal || { daily: [] };
-        this._s.themes  = old.themes || [];
-        this._s.posts   = []; // começa vazio
-        this.save();
-        return;
-      }
+      // seeds mínimos
+      this._s.habits   = this._s.habits || [
+        {id:'h1', name:'Planejar dia anterior'},
+        {id:'h2', name:'Treinar'},
+        {id:'h3', name:'Meditar 5 min'}
+      ];
+      this._s.journal  = this._s.journal || { daily: [], month: { items: [] } };
+      this._s.journal.month = this._s.journal.month || { items: [] };
+      this._s.themes   = this._s.themes || [];
+      this._s.posts    = this._s.posts || [];
 
-      // seed inicial
-      this._s = {
-        habits: [
-          {id:'h1', name:'Planejar dia anterior'},
-          {id:'h2', name:'Treinar'},
-          {id:'h3', name:'Meditar 5 min'}
-        ],
-        journal: { daily: [] },
-        themes: [{ id:'t1', title:'Dopamina e motivação no treino', persona:'Mulheres 30+', objetivo:'Chamar para avaliação', archived:false }],
-        posts: [] // posts são as entregas (tipo + data)
-      };
       this.save();
     }catch(e){ console.error(e) }
   },
@@ -39,21 +27,19 @@ const Data = {
   get(){ return this._s }
 };
 
-/* ===== Datas em HORÁRIO LOCAL (evita UTC) ===== */
+/* ===== Datas (LOCAL, sem UTC) ===== */
 const toLocalISO = (date) => {
   const y = date.getFullYear();
   const m = String(date.getMonth()+1).padStart(2,'0');
   const d = String(date.getDate()).padStart(2,'0');
   return `${y}-${m}-${d}`;
 };
-const parseLocal = (isoYYYYMMDD) => {
-  const [y,m,d] = (isoYYYYMMDD||'').split('-').map(Number);
-  return new Date(y, (m||1)-1, d||1); // local time
-};
+const parseLocal = (iso) => { const [y,m,d]=(iso||'').split('-').map(Number); return new Date(y,(m||1)-1,d||1); };
+
 function weekRange(date){
   const d = new Date(date);
-  const jsDay = d.getDay();            // 0=dom,1=seg...
-  const offset = (jsDay + 6) % 7;      // segunda=0
+  const jsDay = d.getDay();            // 0 dom...6 sáb
+  const offset = (jsDay + 6) % 7;      // segunda = 0
   const monday = new Date(d.getFullYear(), d.getMonth(), d.getDate()-offset);
   return [...Array(7)].map((_,i)=>{
     const x = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate()+i);
@@ -68,7 +54,7 @@ function weekKey(date=new Date()){
   return `${d.getFullYear()}-W${String(week).padStart(2,'0')}`;
 }
 
-/* ===== Home: Hábitos ===== */
+/* ===== Hábitos (visão geral) ===== */
 function renderHabitsSummary(){
   const el = document.getElementById('habits-summary');
   const s = Data.get();
@@ -82,16 +68,14 @@ function renderHabitsSummary(){
     html += `
       <div class="h-row">
         <div class="h-name">${h.name}</div>
-        <div class="h-dots">
-          ${dots}<div class="h-pct">${pct}%</div>
-        </div>
+        <div class="h-dots">${dots}<div class="h-pct">${pct}%</div></div>
       </div>`;
   });
   if(!s.habits.length) html = `<div class="muted">Sem hábitos cadastrados. Cadastre em <b>Journal</b>.</div>`;
   el.innerHTML = html + `<div class="muted" style="margin-top:6px">* visão geral — edite em Journal → Hábitos</div>`;
 }
 
-/* ===== Home: Agenda (semana, por POSTS) ===== */
+/* ===== Agenda de Conteúdo (semana, por POSTS) ===== */
 function renderContentSummary(){
   const el = document.getElementById('content-summary');
   const s = Data.get();
@@ -115,44 +99,45 @@ function renderContentSummary(){
       ? items.map(p=>{
           const theme = s.themes.find(t=>t.id===p.themeId);
           const label = ({yt_long:'YouTube',short:'Reels/TikTok',carousel:'Carrossel',static:'Imagem',blog:'Blog'})[p.type] || p.type;
-          return `
-          <div class="small badge" style="display:flex; align-items:center; gap:6px; margin:2px 4px 0 0">
-            <span>${theme?.title||'—'} • ${label}</span>
-            ${statusBadge(p.date, p.status)}
+          return `<div class="small badge" style="display:flex; align-items:center; gap:6px; margin:2px 4px 0 0">
+            <span>${theme?.title||'—'} • ${label}</span>${statusBadge(p.date, p.status)}
           </div>`;
         }).join('')
       : `<span class="muted">Sem itens</span>`;
 
     const display = parseLocal(d).toLocaleDateString('pt-BR',{weekday:'short', day:'2-digit'});
-    html += `
-      <div class="list-day">
-        <div class="list-day-head">
-          <span>${display}</span>
-          <span class="muted">semana</span>
-        </div>
-        <div>${list}</div>
-      </div>`;
+    html += `<div class="list-day"><div class="list-day-head">
+        <span>${display}</span><span class="muted">semana</span></div><div>${list}</div></div>`;
   });
   el.innerHTML = html;
 }
 
-/* ===== Home: Journal ===== */
+/* ===== Resumo do Journal (AGORA = agenda semanal do Monthly Log) ===== */
 function renderJournalSummary(){
   const el = document.getElementById('journal-summary');
   const s = Data.get();
   const dates = weekRange(new Date());
-  let html = '';
+  const items = (s.journal.month?.items || []).filter(it=> !it.archived);
 
+  let html = '';
   dates.forEach(d=>{
-    const day = s.journal.daily.find(x=>x.date===d);
-    const mood = day?.mood ? `Humor ${day.mood}/10` : '—';
-    const foco = day?.focus ? `• ${day.focus}` : '';
+    const dayItems = items.filter(it=> it.date === d);
+    const list = dayItems.length
+      ? dayItems.map(it=>{
+          const badge = it.done
+            ? `<span class="badge" style="background:#0e2a3a; border-color:#1f5168; color:#a8e1ff">Concluído</span>`
+            : `<span class="badge" style="background:#332b00; border-color:#806b00; color:#ffec99">Pendente</span>`;
+          return `<div class="small badge" style="display:flex; align-items:center; gap:6px; margin:2px 4px 0 0">
+              <span>${it.title}</span>${badge}
+            </div>`;
+        }).join('')
+      : `<span class="muted">Sem itens</span>`;
+
     const display = parseLocal(d).toLocaleDateString('pt-BR',{weekday:'short', day:'2-digit'});
-    html += `
-      <div class="list-day j-card">
-        <span class="small" style="opacity:.8">${display}</span>
-        <span class="small">${mood} <span class="muted">${foco}</span></span>
-        <span class="muted">resumo</span>
+    html += `<div class="list-day j-card">
+        <div class="list-day-head"><span class="small" style="opacity:.8">${display}</span>
+        <span class="muted">agenda</span></div>
+        <div>${list}</div>
       </div>`;
   });
   el.innerHTML = html;
