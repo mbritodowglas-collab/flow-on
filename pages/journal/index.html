@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Flow On — Journal</title>
   <link rel="stylesheet" href="../../assets/css/style.css" />
+  <style>
+    .menu-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px; margin-top:12px}
+    .muted{opacity:.7}
+  </style>
 </head>
 <body>
   <header class="navbar">
@@ -22,15 +26,46 @@
     <section class="card" style="text-align:center">
       <h1>Flow On — Journal</h1>
       <p>Selecione um módulo:</p>
+
       <div class="menu-grid">
-        <a href="../habits/" class="btn big">✅ Hábitos</a>
-        <a href="../daily/" class="btn big">🗒️ Daily</a>
-        <a href="../monthly/" class="btn big">🗓️ Monthly</a>
-        <a href="../quarterly/" class="btn big">📆 Trimestral</a>
+        <button class="btn big" data-paths="../habits/">✅ Hábitos</button>
+        <button class="btn big" data-paths="../daily/">🗒️ Daily</button>
+        <button class="btn big" data-paths="../monthly/">🗓️ Monthly</button>
+        <!-- Para Trimestral testamos duas rotas possíveis: quarterly/ e trimestral/ -->
+        <button class="btn big" data-paths="../quarterly/,../trimestral/">📆 Trimestral</button>
       </div>
+
+      <div id="hint" class="muted" style="margin-top:10px"></div>
     </section>
   </main>
 
   <footer class="footer"><p>Flow On © 2025 — Planeje. Execute. Evolua.</p></footer>
+
+  <script>
+    // Tenta abrir a primeira rota válida (HEAD), senão usa fallback
+    async function openFirstValid(paths){
+      const base = location.href.replace(/\\/journal\\/.*$/,'') // não precisamos, mas deixo aqui p/ clareza
+      for(const raw of paths){
+        const url = new URL(raw, location.href).toString();
+        // forçar trailing slash e tentar o index.html
+        const tryUrls = [url, url.endsWith('/') ? url + 'index.html' : url + '/index.html'];
+        for(const u of tryUrls){
+          try{
+            const r = await fetch(u, { method:'HEAD', cache:'no-store' });
+            if(r.ok){ window.location.href = url; return; }
+          }catch(e){ /* ignora e tenta o próximo */ }
+        }
+      }
+      document.getElementById('hint').textContent = 'Nenhuma rota encontrada para este módulo. Verifique o nome da pasta.';
+    }
+
+    // Liga os botões do grid
+    document.querySelectorAll('[data-paths]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const list = btn.getAttribute('data-paths').split(',').map(s=>s.trim()).filter(Boolean);
+        openFirstValid(list);
+      });
+    });
+  </script>
 </body>
 </html>
