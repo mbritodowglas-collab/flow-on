@@ -1,11 +1,14 @@
-/* ====== Flow On — Temas & Roteiros ====== */
+/* ====== Flow On — Temas & Roteiros (30 dias + data única) ====== */
 const STORE_KEY = 'flowon.v1';
+
 const Data = {
   _s: { habits: [], journal: { daily: [] }, themes: [] },
   load(){
     try{
       const raw = localStorage.getItem(STORE_KEY);
       if(raw) this._s = JSON.parse(raw);
+
+      // seed compatível com data única
       if(!this._s.themes?.length){
         this._s.themes = [{
           id:'t1',
@@ -14,7 +17,7 @@ const Data = {
           objetivo:'Chamar para avaliação',
           status:'Rascunho',
           platforms:['YouTube','Instagram'],
-          dates:{ gravacao:'', publicacao:'' },
+          dates:{ publicacao:'' }, // <<< data única
           scripts:{ yt:'', reels:'' },
           archived:false
         }];
@@ -32,19 +35,24 @@ function weekRange(date){
   const monday = new Date(d); monday.setDate(d.getDate()-day);
   return [...Array(7)].map((_,i)=>{ const x = new Date(monday); x.setDate(monday.getDate()+i); return toISO(x) });
 }
+// 30 dias a partir de hoje
+function daysAhead(n = 30){
+  const start = new Date();
+  return [...Array(n)].map((_,i)=>{ const d = new Date(start); d.setDate(start.getDate()+i); return toISO(d) });
+}
 
 /* render */
 let editingId = null;
 
 function drawIdeas(){
   const box = document.getElementById('ideasList'); box.innerHTML = '';
-  Data.get().themes.filter(t=>t.status==='Ideia' && !t.archived).forEach(t=>{
+  Data.get().themes.filter(t=>t.status==='Rascunho' && !t.archived && !t.dates?.publicacao).forEach(t=>{
     const row = document.createElement('div'); row.className='list-day';
     row.innerHTML = `
       <div class="list-day-head">
         <span class="small">${t.title}</span>
         <span>
-          <button class="btn small" data-open="${t.id}">Rascunhar</button>
+          <button class="btn small" data-open="${t.id}">Editar</button>
           <button class="btn small" data-del="${t.id}">Excluir</button>
         </span>
       </div>`;
@@ -52,12 +60,12 @@ function drawIdeas(){
     row.querySelector('[data-del]').onclick = ()=>{ const s=Data.get(); s.themes=s.themes.filter(x=>x.id!==t.id); Data.save(); drawIdeas(); };
     box.appendChild(row);
   });
-  if(!box.children.length) box.innerHTML = `<div class="muted">Sem ideias por enquanto.</div>`;
+  if(!box.children.length) box.innerHTML = `<div class="muted">Sem rascunhos por enquanto.</div>`;
 }
 
 function drawDrafts(){
   const box = document.getElementById('draftsList'); box.innerHTML = '';
-  Data.get().themes.filter(t=>['Rascunho','Em gravação','Em edição'].includes(t.status) && !t.archived).forEach(t=>{
+  Data.get().themes.filter(t=>t.dates?.publicacao && !t.archived && t.status!=='Publicado').forEach(t=>{
     const row = document.createElement('div'); row.className='list-day';
     row.innerHTML = `
       <div class="list-day-head">
@@ -71,19 +79,21 @@ function drawDrafts(){
     row.querySelector('[data-del]').onclick = ()=>{ const s=Data.get(); s.themes=s.themes.filter(x=>x.id!==t.id); Data.save(); drawDrafts(); drawWeekPub(); };
     box.appendChild(row);
   });
-  if(!box.children.length) box.innerHTML = `<div class="muted">Sem rascunhos no momento.</div>`;
+  if(!box.children.length) box.innerHTML = `<div class="muted">Nenhum item agendado ainda.</div>`;
 }
 
-function drawWeekPub(){
+function drawWeekPub(){ // mantém o id, mas agora mostra 30 dias
   const box = document.getElementById('weekPub'); box.innerHTML = '';
-  const dates = weekRange(new Date());
+  const dates = daysAhead(30);
   dates.forEach(d=>{
     const dayWrap = document.createElement('div'); dayWrap.className='list-day';
     dayWrap.innerHTML = `
       <div class="list-day-head">
         <span>${new Date(d).toLocaleDateString('pt-BR',{weekday:'short', day:'2-digit'})}</span>
+        <span class="muted">planejamento</span>
       </div>`;
     const list = document.createElement('div');
+
     const items = Data.get().themes.filter(t=> !t.archived && t.status==='Agendado' && t.dates?.publicacao === d);
     if(!items.length){
       list.innerHTML = `<span class="muted">Sem itens</span>`;
@@ -91,7 +101,8 @@ function drawWeekPub(){
       items.forEach(t=>{
         const row = document.createElement('div'); row.className='small badge';
         row.style.display='flex'; row.style.justifyContent='space-between'; row.style.alignItems='center';
-        row.style.margin='4px 0 0'; row.innerHTML = `
+        row.style.margin='4px 0 0';
+        row.innerHTML = `
           <span>${t.title} — ${(t.platforms||[]).join(' • ')}</span>
           <button class="btn small" data-ok="${t.id}" style="margin-left:8px">OK publicado</button>`;
         row.querySelector('[data-ok]').onclick = ()=>{
@@ -115,23 +126,18 @@ function openThemeModal(data={}){
   document.getElementById('fTitulo').value = data.title||'';
   document.getElementById('fPersona').value = data.persona||'';
   document.getElementById('fObjetivo').value = data.objetivo||'';
-  document.getElementById('dGravacao').value = data.dates?.gravacao||'';
-  document.getElementById('dPublicacao').value = data.dates?.publicacao||'';
+  document.getElementById('dPublicacao').value = data.dates?.publicacao || '';
   document.getElementById('pYT').checked = !!data.platforms?.includes('YouTube');
   document.getElementById('pIG').checked = !!data.platforms?.includes('Instagram');
   document.getElementById('pBlog').checked = !!data.platforms?.includes('Blog');
-  document.getElementById('fStatus').value = data.status||'Ideia';
+  document.getElementById('fStatus').value = (data.dates?.publicacao ? 'Agendado' : 'Rascunho');
   document.getElementById('rYT').value = data.scripts?.yt||'';
   document.getElementById('rReels').value = data.scripts?.reels||'';
   document.getElementById('themeIdInfo').textContent = editingId || 'novo';
 
   document.getElementById('btnSaveTheme').onclick = ()=>{
-    let status = document.getElementById('fStatus').value;
-    const hasPub = !!document.getElementById('dPublicacao').value;
-
-    // regras de fluxo:
-    if(status==='Ideia') status = 'Rascunho';   // virou rascunho ao salvar
-    if(hasPub) status = 'Agendado';             // se tem data de publicação, já vai pra agendado
+    const pub = document.getElementById('dPublicacao').value;
+    const status = pub ? 'Agendado' : 'Rascunho'; // lógica simples confirmada (Opção A)
 
     const obj = {
       id: editingId || ('t_'+Date.now()),
@@ -144,10 +150,7 @@ function openThemeModal(data={}){
         document.getElementById('pBlog').checked && 'Blog'
       ].filter(Boolean),
       status,
-      dates: {
-        gravacao: document.getElementById('dGravacao').value,
-        publicacao: document.getElementById('dPublicacao').value
-      },
+      dates: { publicacao: pub }, // data única
       scripts: { yt: document.getElementById('rYT').value, reels: document.getElementById('rReels').value },
       archived: data.archived || false
     };
@@ -174,10 +177,9 @@ document.addEventListener('DOMContentLoaded', ()=>{
   document.getElementById('btnAddIdea').onclick = ()=>{
     const title = prompt('Título da ideia:'); if(!title) return;
     Data.get().themes.push({
-      id:'t_'+Date.now(), title, status:'Ideia',
+      id:'t_'+Date.now(), title, status:'Rascunho',
       persona:'', objetivo:'', platforms:[],
-      dates:{ gravacao:'', publicacao:'' },
-      scripts:{ yt:'', reels:'' }, archived:false
+      dates:{ publicacao:'' }, scripts:{ yt:'', reels:'' }, archived:false
     });
     Data.save(); drawIdeas();
   };
