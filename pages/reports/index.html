@@ -6,6 +6,9 @@
   <title>Flow On — Relatórios</title>
   <link rel="stylesheet" href="../../assets/css/style.css" />
   <link rel="icon" href="../../assets/img/favicon-32.png" />
+  <style>
+    .pre{white-space:pre-wrap;background:var(--surface-2,#121212);border:1px solid var(--border,#2a2a2a);border-radius:12px;padding:12px}
+  </style>
 </head>
 <body>
   <header class="navbar">
@@ -18,8 +21,8 @@
         <a href="../../index.html">🏠 Home</a>
         <a href="../journal/">📓 Journal</a>
         <a href="../themes/">🎬 Temas</a>
-        <a href="../settings/">⚙️ Configurações</a>
         <a href="./" class="active">📊 Relatórios</a>
+        <a href="../settings/">⚙️ Configurações</a>
       </nav>
     </div>
   </header>
@@ -50,11 +53,13 @@
             </select>
           </div>
         </div>
-        <div class="btn-group" style="margin-top:8px">
+        <div class="btn-group" style="margin-top:8px;flex-wrap:wrap">
           <button id="btnBuildMonth" class="btn">Gerar relatório</button>
           <button id="btnDLMonthMD" class="btn" disabled>Baixar .md</button>
-          <button id="btnDLMonthCSV" class="btn" disabled>Baixar .csv (agenda)</button>
+          <button id="btnDLMonthCSV" class="btn" disabled>Baixar .csv</button>
           <button id="btnCopyMonth" class="btn" disabled>Copiar</button>
+          <button id="btnOpenDocsMonth" class="btn" disabled>Copiar & abrir no Docs</button>
+          <button id="btnOpenSheetsMonth" class="btn" disabled>Copiar & abrir no Sheets</button>
         </div>
         <h3 style="margin-top:14px">Prévia</h3>
         <pre id="monthPreview" class="pre"></pre>
@@ -77,10 +82,11 @@
             </select>
           </div>
         </div>
-        <div class="btn-group" style="margin-top:8px">
+        <div class="btn-group" style="margin-top:8px;flex-wrap:wrap">
           <button id="btnBuildQuarter" class="btn">Gerar relatório</button>
           <button id="btnDLQuarterMD" class="btn" disabled>Baixar .md</button>
           <button id="btnCopyQuarter" class="btn" disabled>Copiar</button>
+          <button id="btnOpenDocsQuarter" class="btn" disabled>Copiar & abrir no Docs</button>
         </div>
         <h3 style="margin-top:14px">Prévia</h3>
         <pre id="quarterPreview" class="pre"></pre>
@@ -92,6 +98,6 @@
     <p>Flow On © 2025 — Planeje. Execute. Evolua.</p>
   </footer>
 
-  <script src="../../assets/js/reports.js?v=1"></script>
+  <script src="../../assets/js/reports.js?v=2"></script>
 </body>
 </html>
