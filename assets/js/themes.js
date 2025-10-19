@@ -1,278 +1,408 @@
-/* ====== Flow On — Temas & Roteiros (Ideia -> Rascunho -> Agendado/Publicado) ====== */
-const STORE_KEY = 'flowon.v2';
+/* Flow On — Conteúdos (Themes) v5
+   Liga os botões da página e mantém dados em localStorage.
+   Depende de window.Data (core.js). Se não houver, cria um fallback leve.
+*/
 
-const Data = {
-  _s: { themes: [], posts: [] },
-  load(){
-    const raw = localStorage.getItem(STORE_KEY);
-    if(raw){ this._s = JSON.parse(raw); return; }
-    this._s = { themes: [], posts: [] };
-    this.save();
-  },
-  save(){ localStorage.setItem(STORE_KEY, JSON.stringify(this._s)) },
-  get(){ return this._s }
-};
+// ---------- DATA LAYER ----------
+(function ensureData(){
+  if(!window.Data){
+    const KEY = 'flowon';
+    window.Data = {
+      _s: null,
+      load(){ try{ this._s = JSON.parse(localStorage.getItem(KEY)||'{}'); }catch(e){ this._s={}; } },
+      save(){ localStorage.setItem(KEY, JSON.stringify(this._s||{})); },
+      get(){ if(!this._s) this.load(); return this._s; }
+    };
+    console.warn('[themes] Data fallback ativo (core.js não encontrado).');
+  }
+})();
 
-/* utils (datas locais) */
-const toLocalISO = (date) => {
-  const y = date.getFullYear(), m = String(date.getMonth()+1).padStart(2,'0'), d = String(date.getDate()).padStart(2,'0');
-  return `${y}-${m}-${d}`;
+function S(){
+  const s = Data.get();
+  s.content ||= {};
+  s.content.ideas ||= [];        // [{id,title}]
+  s.content.drafts ||= [];       // [{id,title,kind}]  kind: youtube|short|carousel|static|blog
+  s.content.plan ||= [];         // [{id,title,kind,date,status:'scheduled'}]
+  s.content.analysis ||= [];     // [{id,title,kind,date,views,likes,comments,clicks,notes,archived:boolean}]
+  return s;
+}
+function uid(prefix='i'){ return `${prefix}_${Math.random().toString(36).slice(2,9)}`; }
+
+// ---------- HELPERS ----------
+const KIND_LABEL = {
+  youtube: 'YouTube',
+  short: 'Reels/TikTok',
+  carousel: 'Carrossel',
+  static: 'Imagem estática',
+  blog: 'Blog'
 };
-const parseLocal = (iso) => { const [y,m,d]=(iso||'').split('-').map(Number); return new Date(y,(m||1)-1,d||1); };
-function daysAhead(n = 30){
-  const start = new Date();
-  return [...Array(n)].map((_,i)=> toLocalISO(new Date(start.getFullYear(), start.getMonth(), start.getDate()+i)) );
+function fmtDayLabel(d){
+  // d = 'YYYY-MM-DD'
+  const dt = new Date(d+'T00:00:00');
+  return dt.toLocaleDateString('pt-BR', { weekday:'short', day:'2-digit'});
+}
+function todayISO(){
+  const t = new Date(); t.setHours(0,0,0,0);
+  return t.toISOString().slice(0,10);
+}
+function addDaysISO(iso, n){
+  const d = new Date(iso+'T00:00:00'); d.setDate(d.getDate()+n);
+  return d.toISOString().slice(0,10);
+}
+function next30Range(){
+  const start = todayISO();
+  const end = addDaysISO(start, 29);
+  return {start, end};
+}
+function inNext30(iso){
+  const {start,end} = next30Range();
+  return iso >= start && iso <= end;
 }
 
-/* ===== IDEIAS ===== */
-function drawIdeas(){
-  const box = document.getElementById('ideasList'); box.innerHTML='';
-  const { themes } = Data.get();
+// ---------- RENDER: IDEIAS ----------
+function renderIdeas(){
+  const wrap = document.getElementById('ideasList');
+  const s = S();
+  const ideas = s.content.ideas;
+  // contador
+  const cnt = document.getElementById('ideasCount');
+  if(cnt) cnt.textContent = `${ideas.length} ${ideas.length===1?'item':'itens'}`;
 
-  if(!themes.length){
-    box.innerHTML = `<div class="muted">Sem ideias ainda. Clique em <b>+ Ideia</b>.</div>`;
+  if(!wrap) return;
+  wrap.innerHTML = '';
+  if(ideas.length === 0){
+    wrap.innerHTML = `<div class="empty">Sem ideias por aqui. Clique em <b>+ Ideia</b> para adicionar.</div>`;
     return;
   }
-
-  themes.filter(t=>!t.archived).forEach(t=>{
-    const row = document.createElement('div'); row.className='list-day';
+  ideas.forEach(it=>{
+    const row = document.createElement('div');
+    row.className = 'item';
     row.innerHTML = `
-      <div class="list-day-head">
-        <span class="small">${t.title}</span>
-        <span><button class="btn small" data-del="${t.id}">Excluir</button></span>
-      </div>`;
-    row.querySelector('[data-del]').onclick = ()=>{
-      const s = Data.get();
-      s.themes = s.themes.filter(x=>x.id!==t.id);
-      s.posts = s.posts.filter(p=>p.themeId!==t.id); // limpa órfãos
-      Data.save(); drawIdeas(); drawDrafts(); drawPlan(); drawInsights();
+      <div>
+        <strong>${escapeHtml(it.title)}</strong>
+      </div>
+      <div class="flex">
+        <button class="btn small" data-act="use" data-id="${it.id}">Usar no rascunho</button>
+        <button class="btn small danger" data-act="del" data-id="${it.id}">Excluir</button>
+      </div>
+    `;
+    wrap.appendChild(row);
+  });
+
+  // ações
+  wrap.querySelectorAll('[data-act="del"]').forEach(btn=>{
+    btn.onclick = ()=>{
+      const id = btn.getAttribute('data-id');
+      const s = S();
+      s.content.ideas = s.content.ideas.filter(x=>x.id!==id);
+      Data.save(); renderIdeas();
     };
-    box.appendChild(row);
+  });
+  wrap.querySelectorAll('[data-act="use"]').forEach(btn=>{
+    btn.onclick = ()=>{
+      const id = btn.getAttribute('data-id');
+      const s = S();
+      const idea = s.content.ideas.find(x=>x.id===id);
+      if(!idea) return;
+      // escolher formato
+      const kind = prompt('Destino do rascunho (youtube|short|carousel|static|blog):','youtube');
+      if(!kind || !KIND_LABEL[kind]) return alert('Formato inválido.');
+      s.content.drafts.push({ id: uid('d'), title: idea.title, kind });
+      // remove ideia do banco (como definido por você)
+      s.content.ideas = s.content.ideas.filter(x=>x.id!==id);
+      Data.save(); renderIdeas(); renderDrafts();
+    };
   });
 }
 
-/* ===== RASCUNHOS (posts sem data) ===== */
-function drawDrafts(){
-  const box = document.getElementById('draftsList'); box.innerHTML='';
-  const s = Data.get();
-  const drafts = s.posts.filter(p=> p.status==='Rascunho' && !p.archived);
+// ---------- RENDER: RASCUNHOS ----------
+let currentFilter = 'all';
 
-  if(!drafts.length){
-    box.innerHTML = `<div class="muted">Sem rascunhos no momento. Clique em <b>+ Criar rascunho</b>.</div>`;
+function renderDrafts(){
+  const wrap = document.getElementById('draftsList');
+  if(!wrap) return;
+  const s = S();
+  const list = s.content.drafts.filter(d => currentFilter==='all' ? true : d.kind===currentFilter);
+
+  wrap.innerHTML = '';
+  if(list.length===0){
+    wrap.innerHTML = `<div class="empty">Sem rascunhos. Clique em <b>+ Criar rascunho</b> e escolha um destino.</div>`;
     return;
   }
-
-  drafts.forEach(p=>{
-    const theme = s.themes.find(t=>t.id===p.themeId);
-    const label = ({yt_long:'YouTube',short:'Reels/TikTok',carousel:'Carrossel',static:'Imagem',blog:'Blog'})[p.type] || p.type;
-    const row = document.createElement('div'); row.className='list-day';
+  list.forEach(d=>{
+    const row = document.createElement('div');
+    row.className = 'item';
     row.innerHTML = `
-      <div class="list-day-head">
-        <span class="small"><b>${theme?.title||'—'}</b> • ${label}</span>
-        <span>
-          <a class="btn small" href="editor.html?postId=${p.id}">Editar</a>
-          <button class="btn small" data-del="${p.id}">Excluir</button>
-        </span>
-      </div>`;
-    row.querySelector('[data-del]').onclick = ()=>{
-      const ix = s.posts.findIndex(x=>x.id===p.id);
-      if(ix>=0){ s.posts.splice(ix,1); Data.save(); drawDrafts(); }
+      <div>
+        <strong>${escapeHtml(d.title)} — ${KIND_LABEL[d.kind]||d.kind}</strong>
+        <div class="muted">1 rascunho = 1 destino</div>
+      </div>
+      <div class="flex">
+        <button class="btn small" data-act="schedule" data-id="${d.id}">Agendar</button>
+        <button class="btn small danger" data-act="del" data-id="${d.id}">Excluir</button>
+      </div>
+    `;
+    wrap.appendChild(row);
+  });
+
+  wrap.querySelectorAll('[data-act="del"]').forEach(btn=>{
+    btn.onclick = ()=>{
+      const id = btn.getAttribute('data-id');
+      const s = S();
+      s.content.drafts = s.content.drafts.filter(x=>x.id!==id);
+      Data.save(); renderDrafts();
     };
-    box.appendChild(row);
+  });
+
+  wrap.querySelectorAll('[data-act="schedule"]').forEach(btn=>{
+    btn.onclick = ()=>{
+      const id = btn.getAttribute('data-id');
+      const s = S();
+      const d = s.content.drafts.find(x=>x.id===id);
+      if(!d) return;
+      // data obrigatória
+      const date = prompt('Data de publicação (AAAA-MM-DD):', todayISO());
+      if(!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return alert('Data inválida.');
+      // move para planejamento
+      s.content.plan.push({ id: uid('p'), title: d.title, kind: d.kind, date, status:'scheduled' });
+      s.content.drafts = s.content.drafts.filter(x=>x.id!==id);
+      Data.save(); renderDrafts(); renderPlan();
+      alert('Agendado!');
+    };
   });
 }
 
-/* ===== PLANEJAMENTO 30 DIAS (posts com data) ===== */
-function drawPlan(){
-  const box = document.getElementById('planList'); box.innerHTML='';
-  const s = Data.get();
-  const dates = daysAhead(30);
+// ---------- RENDER: PLANEJAMENTO (30 DIAS) ----------
+function renderPlan(){
+  const wrap = document.getElementById('planList');
+  const rangeEl = document.getElementById('planRangeLabel');
+  if(rangeEl){
+    const {start,end} = next30Range();
+    const s = new Date(start).toLocaleDateString('pt-BR'); 
+    const e = new Date(end).toLocaleDateString('pt-BR');
+    rangeEl.textContent = `${s} – ${e}`;
+  }
+  if(!wrap) return;
 
-  dates.forEach(d=>{
-    const wrap = document.createElement('div'); wrap.className='list-day';
-    wrap.innerHTML = `
-      <div class="list-day-head">
-        <span>${parseLocal(d).toLocaleDateString('pt-BR',{weekday:'short', day:'2-digit'})}</span>
-        <span class="muted">planejamento</span>
-      </div>`;
-    const list = document.createElement('div');
+  const s = S();
+  const items = s.content.plan
+    .filter(p=>inNext30(p.date))
+    .sort((a,b)=>a.date.localeCompare(b.date));
 
-    const items = s.posts.filter(p=> !p.archived && p.status!=='Rascunho' && p.date===d);
-    if(!items.length){
-      list.innerHTML = `<span class="muted">Sem itens</span>`;
-    }else{
-      items.forEach(p=>{
-        const theme = s.themes.find(t=>t.id===p.themeId);
-        const label = ({yt_long:'YouTube',short:'Reels/TikTok',carousel:'Carrossel',static:'Imagem',blog:'Blog'})[p.type] || p.type;
-
-        const row = document.createElement('div'); row.className='small badge';
-        row.style.display='flex'; row.style.alignItems='center'; row.style.justifyContent='space-between'; row.style.margin='4px 0 0';
-        row.innerHTML = `
-          <span>${theme?.title||'—'} • ${label}</span>
-          <span style="display:flex; gap:6px">
-            <a class="btn small" href="editor.html?postId=${p.id}">Editar</a>
-            <button class="btn small" data-back="${p.id}">Voltar p/ rascunho</button>
-            <button class="btn small" data-ok="${p.id}">OK publicado</button>
-          </span>`;
-
-        row.querySelector('[data-back]').onclick = ()=>{
-          p.status = 'Rascunho'; p.date=''; Data.save(); drawPlan(); drawDrafts();
-        };
-        row.querySelector('[data-ok]').onclick = ()=>{
-          p.status = 'Publicado'; Data.save(); drawPlan(); drawInsights();
-        };
-        list.appendChild(row);
-      });
-    }
-
-    wrap.appendChild(list);
-    box.appendChild(wrap);
+  // agrupar por dia
+  const byDay = {};
+  items.forEach(it=>{
+    byDay[it.date] ||= [];
+    byDay[it.date].push(it);
   });
-}
 
-/* ===== ANÁLISE (publicados não arquivados) ===== */
-function drawInsights(){
-  const box = document.getElementById('insightsList'); box.innerHTML='';
-  const s = Data.get();
-  const published = s.posts.filter(p=> p.status==='Publicado' && !p.archived);
+  wrap.innerHTML = '';
+  const {start,end} = next30Range();
+  // percorre todos os dias do range (mesmo dias sem item)
+  let cursor = start;
+  while(cursor <= end){
+    const dayItems = byDay[cursor] || [];
+    const block = document.createElement('div');
+    block.className = 'item';
+    const itemsHtml = dayItems.length
+      ? dayItems.map(p=>`• ${escapeHtml(p.title)} — ${KIND_LABEL[p.kind]||p.kind} 
+           <button class="btn small" data-act="unschedule" data-id="${p.id}">Voltar p/ rascunho</button>
+           <button class="btn small" data-act="posted" data-id="${p.id}">OK publicado</button>`).join('<br/>')
+      : '<span class="muted">Sem itens</span>';
 
-  if(!published.length){ 
-    box.innerHTML = `<div class="muted">Sem itens publicados aguardando análise.</div>`; 
-    return; 
+    block.innerHTML = `
+      <div>
+        <strong>${fmtDayLabel(cursor)}</strong>
+        <div class="muted">planejamento</div>
+      </div>
+      <div style="max-width:100%">${itemsHtml}</div>
+    `;
+    wrap.appendChild(block);
+    cursor = addDaysISO(cursor, 1);
   }
 
-  published.forEach(p=>{
-    p.analytics = p.analytics || { views:0, likes:0, comments:0, clicks:0, notes:'' };
-    const theme = s.themes.find(t=>t.id===p.themeId);
-    const label = ({yt_long:'YouTube',short:'Reels/TikTok',carousel:'Carrossel',static:'Imagem',blog:'Blog'})[p.type] || p.type;
+  // ações dos itens do planejamento
+  wrap.querySelectorAll('[data-act="unschedule"]').forEach(btn=>{
+    btn.onclick = ()=>{
+      const id = btn.getAttribute('data-id');
+      const s = S();
+      const p = s.content.plan.find(x=>x.id===id);
+      if(!p) return;
+      s.content.plan = s.content.plan.filter(x=>x.id!==id);
+      s.content.drafts.push({ id: uid('d'), title: p.title, kind: p.kind });
+      Data.save(); renderDrafts(); renderPlan();
+    };
+  });
+  wrap.querySelectorAll('[data-act="posted"]').forEach(btn=>{
+    btn.onclick = ()=>{
+      const id = btn.getAttribute('data-id');
+      const s = S();
+      const p = s.content.plan.find(x=>x.id===id);
+      if(!p) return;
+      // abre análise com dados preenchidos
+      document.getElementById('anTitle').value = p.title;
+      document.getElementById('anFormat').value = p.kind;
+      document.getElementById('anDate').value = p.date;
+      document.getElementById('anStatus').value = 'posted';
+      // remove do plano
+      s.content.plan = s.content.plan.filter(x=>x.id!==id);
+      Data.save(); renderPlan();
+      window.scrollTo({top: document.getElementById('analysisForm').offsetTop-40, behavior:'smooth'});
+    };
+  });
+}
 
-    const row = document.createElement('div'); 
-    row.className='list-day';
+// ---------- RENDER: ANÁLISE ----------
+function renderAnalysisRecent(){
+  const wrap = document.getElementById('analysisRecent');
+  if(!wrap) return;
+  const s = S();
+  const list = s.content.analysis.slice(-5).reverse(); // últimas 5
+  wrap.innerHTML = '';
+  if(list.length===0){
+    wrap.innerHTML = `<div class="empty">Sem análises recentes.</div>`;
+    return;
+  }
+  list.forEach(a=>{
+    const row = document.createElement('div');
+    row.className = 'item';
     row.innerHTML = `
-      <div class="list-day-head">
-        <span class="small"><b>${theme?.title||'—'}</b> • ${label} • ${p.date||'—'}</span>
+      <div>
+        <strong>${escapeHtml(a.title)} — ${KIND_LABEL[a.kind]||a.kind}</strong>
+        <div class="muted">${new Date(a.date).toLocaleDateString('pt-BR')} • Views ${a.views} • Likes ${a.likes} • Coments ${a.comments} • Cliques ${a.clicks}</div>
       </div>
-      <div class="small" style="display:grid; gap:8px; grid-template-columns: repeat(4, minmax(0,1fr));">
-        <label>Views<br><input type="number" min="0" value="${p.analytics.views||0}" data-f="views" style="width:100%"></label>
-        <label>Likes<br><input type="number" min="0" value="${p.analytics.likes||0}" data-f="likes" style="width:100%"></label>
-        <label>Comments<br><input type="number" min="0" value="${p.analytics.comments||0}" data-f="comments" style="width:100%"></label>
-        <label>Cliques/CTA<br><input type="number" min="0" value="${p.analytics.clicks||0}" data-f="clicks" style="width:100%"></label>
+      <div class="flex">
+        ${a.archived?'<span class="pill">Arquivado</span>':''}
       </div>
-      <div style="margin-top:8px">
-        <textarea data-f="notes" rows="3" placeholder="Observações, hipóteses, próximos testes..." style="width:100%">${p.analytics.notes||''}</textarea>
-      </div>
-      <div style="margin-top:8px; display:flex; gap:8px">
-        <button class="btn small" data-save="${p.id}">Salvar análise</button>
-        <button class="btn small" data-archive="${p.id}">Arquivar</button>
-        <button class="btn small" data-del="${p.id}">Excluir</button>
-      </div>`;
+    `;
+    wrap.appendChild(row);
+  });
+}
 
-    // salvar métricas
-    row.querySelector('[data-save]').onclick = ()=>{
-      const get = sel => row.querySelector(`[data-f="${sel}"]`);
-      p.analytics = {
-        views: Number(get('views').value||0),
-        likes: Number(get('likes').value||0),
-        comments: Number(get('comments').value||0),
-        clicks: Number(get('clicks').value||0),
-        notes: get('notes').value||''
-      };
-      Data.save(); alert('Análise salva!');
+// ---------- UI EVENTS (botões da página) ----------
+function bindUI(){
+  // + Ideia
+  const btnAddIdea = document.getElementById('btnAddIdea');
+  if(btnAddIdea){
+    btnAddIdea.onclick = ()=>{
+      const title = prompt('Título da ideia:');
+      if(!title) return;
+      const s = S();
+      s.content.ideas.push({ id: uid('i'), title: title.trim() });
+      Data.save(); renderIdeas();
     };
+  }
 
-    // arquivar
-    row.querySelector('[data-archive]').onclick = ()=>{
-      if(confirm('Arquivar este post?')){ 
-        p.archived = true; 
-        Data.save(); 
-        drawInsights(); 
-      }
-    };
-
-    // excluir
-    row.querySelector('[data-del]').onclick = ()=>{
-      if(confirm('Excluir este post definitivamente?')){
-        const ix = s.posts.findIndex(x=>x.id===p.id);
-        if(ix>=0){ 
-          s.posts.splice(ix,1); 
-          Data.save(); 
-          drawInsights(); 
+  // + Criar rascunho
+  const btnCreateDraft = document.getElementById('btnCreateDraft');
+  if(btnCreateDraft){
+    btnCreateDraft.onclick = ()=>{
+      const s = S();
+      const fromIdeas = s.content.ideas;
+      let title = '';
+      if(fromIdeas.length>0){
+        const list = fromIdeas.map((x,i)=>`${i+1}. ${x.title}`).join('\n');
+        const pick = prompt(`Escolha uma ideia (número) ou deixe vazio para rascunho em branco:\n\n${list}`);
+        if(pick && Number(pick)>=1 && Number(pick)<=fromIdeas.length){
+          title = fromIdeas[Number(pick)-1].title;
+          // remove ideia (vira rascunho)
+          s.content.ideas.splice(Number(pick)-1,1);
         }
       }
+      if(!title) title = prompt('Título do rascunho:')||'Sem título';
+      const kind = prompt('Destino do rascunho (youtube|short|carousel|static|blog):','youtube');
+      if(!kind || !KIND_LABEL[kind]) return alert('Formato inválido.');
+      s.content.drafts.push({ id: uid('d'), title: title.trim(), kind });
+      Data.save(); renderIdeas(); renderDrafts();
     };
-
-    box.appendChild(row);
-  });
-}
-
-/* ===== MODAL: criar rascunho(s) a partir de uma ideia (multi-destino) ===== */
-function openCreateDraftModal(){
-  const s = Data.get();
-  const ideas = s.themes.filter(t=>!t.archived);
-  const modal = document.getElementById('modalCreateDraft');
-  const selIdea = document.getElementById('draftIdeaSelect');
-
-  selIdea.innerHTML = '';
-  if(!ideas.length){
-    selIdea.innerHTML = `<option value="">(Não há ideias — crie uma primeiro)</option>`;
-  }else{
-    ideas.forEach(t=>{
-      const opt = document.createElement('option');
-      opt.value = t.id; opt.textContent = t.title;
-      selIdea.appendChild(opt);
-    });
   }
 
-  // limpa checkboxes
-  modal.querySelectorAll('#destinosGroup input[type="checkbox"]').forEach(c=> c.checked=false);
-
-  modal.showModal();
-
-  document.getElementById('btnConfirmCreateDraft').onclick = ()=>{
-    const themeId = selIdea.value;
-    if(!themeId){ alert('Selecione uma ideia.'); return; }
-
-    const checked = [...modal.querySelectorAll('#destinosGroup input[type="checkbox"]:checked')].map(c=>c.value);
-    if(!checked.length){ alert('Selecione pelo menos um destino.'); return; }
-
-    // cria 1 post para cada destino selecionado
-    let lastPostId = null;
-    checked.forEach(type=>{
-      const id = 'p_'+Date.now()+Math.floor(Math.random()*1000);
-      s.posts.push({
-        id, themeId, type,
-        date:'', status:'Rascunho', script:'',
-        analytics:{ views:0, likes:0, comments:0, clicks:0, notes:'' },
-        archived:false
-      });
-      lastPostId = id;
+  // filtros (sticky)
+  document.querySelectorAll('.filters .btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.filters .btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      currentFilter = btn.dataset.filter || 'all';
+      renderDrafts();
     });
-
-    Data.save();
-    modal.close();
-
-    if(checked.length === 1){
-      location.href = `editor.html?postId=${lastPostId}`;
-    }else{
-      drawDrafts();
-    }
-  };
-}
-
-/* ===== Boot ===== */
-document.addEventListener('DOMContentLoaded', ()=>{
-  document.querySelectorAll('.menu a').forEach(a=>{
-    a.classList.toggle('active', a.getAttribute('href') === './' || a.getAttribute('href')?.endsWith('/themes/'));
   });
 
-  Data.load();
-  drawIdeas(); drawDrafts(); drawPlan(); drawInsights();
+  // + Post em branco (vai direto pra agenda)
+  const btnBlank = document.getElementById('btnNewBlankPost');
+  if(btnBlank){
+    btnBlank.onclick = ()=>{
+      const title = prompt('Título do post:'); if(!title) return;
+      const kind = prompt('Formato (youtube|short|carousel|static|blog):','youtube');
+      if(!kind || !KIND_LABEL[kind]) return alert('Formato inválido.');
+      const date = prompt('Data (AAAA-MM-DD):', todayISO());
+      if(!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return alert('Data inválida.');
+      const s = S();
+      s.content.plan.push({ id: uid('p'), title:title.trim(), kind, date, status:'scheduled' });
+      Data.save(); renderPlan();
+    };
+  }
 
-  document.getElementById('btnAddIdea').onclick = ()=>{
-    const title = prompt('Título da ideia:'); if(!title) return;
-    const s = Data.get(); s.themes.push({ id:'t_'+Date.now(), title, persona:'', objetivo:'', archived:false });
-    Data.save(); drawIdeas();
-  };
+  // Análise — salvar / arquivar / excluir
+  const btnSaveAnalysis = document.getElementById('btnSaveAnalysis');
+  const btnArchivePost  = document.getElementById('btnArchivePost');
+  const btnDeletePost   = document.getElementById('btnDeletePost');
 
-  document.getElementById('btnCreateDraft').onclick = openCreateDraftModal;
+  function collectAnalysis(){
+    const title = (document.getElementById('anTitle').value||'').trim();
+    const kind  = document.getElementById('anFormat').value;
+    const date  = document.getElementById('anDate').value||todayISO();
+    const status= document.getElementById('anStatus').value;
+    const views = Number(document.getElementById('anViews').value||0);
+    const likes = Number(document.getElementById('anLikes').value||0);
+    const comments = Number(document.getElementById('anComments').value||0);
+    const clicks = Number(document.getElementById('anClicks').value||0);
+    const notes = document.getElementById('anNotes').value||'';
+    return {title, kind, date, status, views, likes, comments, clicks, notes};
+  }
+
+  if(btnSaveAnalysis){
+    btnSaveAnalysis.onclick = ()=>{
+      const a = collectAnalysis();
+      if(!a.title) return alert('Informe o título/tema.');
+      const s = S();
+      s.content.analysis.push({ id: uid('a'), ...a, archived:false });
+      Data.save(); renderAnalysisRecent();
+      alert('Análise salva!');
+    };
+  }
+  if(btnArchivePost){
+    btnArchivePost.onclick = ()=>{
+      const a = collectAnalysis();
+      if(!a.title) return alert('Informe o título/tema.');
+      const s = S();
+      s.content.analysis.push({ id: uid('a'), ...a, archived:true });
+      Data.save(); renderAnalysisRecent();
+      alert('Item arquivado.');
+    };
+  }
+  if(btnDeletePost){
+    btnDeletePost.onclick = ()=>{
+      // Limpa o formulário atual (só visual)
+      ['anTitle','anDate','anViews','anLikes','anComments','anClicks','anNotes'].forEach(id=>{
+        const el = document.getElementById(id); if(el) el.value='';
+      });
+      document.getElementById('anStatus').value='posted';
+      document.getElementById('anFormat').value='youtube';
+      alert('Formulário limpo.');
+    };
+  }
+}
+
+// ---------- UTIL ----------
+function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+// ---------- BOOT ----------
+document.addEventListener('DOMContentLoaded', ()=>{
+  try{ Data.load(); }catch(e){}
+  bindUI();
+  renderIdeas();
+  renderDrafts();
+  renderPlan();
+  renderAnalysisRecent();
+  console.log('[themes] pronto');
 });
