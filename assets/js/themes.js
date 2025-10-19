@@ -136,14 +136,18 @@ function drawInsights(){
   const s = Data.get();
   const published = s.posts.filter(p=> p.status==='Publicado' && !p.archived);
 
-  if(!published.length){ box.innerHTML = `<div class="muted">Sem itens publicados aguardando análise.</div>`; return; }
+  if(!published.length){ 
+    box.innerHTML = `<div class="muted">Sem itens publicados aguardando análise.</div>`; 
+    return; 
+  }
 
   published.forEach(p=>{
     p.analytics = p.analytics || { views:0, likes:0, comments:0, clicks:0, notes:'' };
     const theme = s.themes.find(t=>t.id===p.themeId);
     const label = ({yt_long:'YouTube',short:'Reels/TikTok',carousel:'Carrossel',static:'Imagem',blog:'Blog'})[p.type] || p.type;
 
-    const row = document.createElement('div'); row.className='list-day';
+    const row = document.createElement('div'); 
+    row.className='list-day';
     row.innerHTML = `
       <div class="list-day-head">
         <span class="small"><b>${theme?.title||'—'}</b> • ${label} • ${p.date||'—'}</span>
@@ -160,8 +164,10 @@ function drawInsights(){
       <div style="margin-top:8px; display:flex; gap:8px">
         <button class="btn small" data-save="${p.id}">Salvar análise</button>
         <button class="btn small" data-archive="${p.id}">Arquivar</button>
+        <button class="btn small" data-del="${p.id}">Excluir</button>
       </div>`;
 
+    // salvar métricas
     row.querySelector('[data-save]').onclick = ()=>{
       const get = sel => row.querySelector(`[data-f="${sel}"]`);
       p.analytics = {
@@ -173,8 +179,26 @@ function drawInsights(){
       };
       Data.save(); alert('Análise salva!');
     };
+
+    // arquivar
     row.querySelector('[data-archive]').onclick = ()=>{
-      if(confirm('Arquivar este post?')){ p.archived = true; Data.save(); drawInsights(); }
+      if(confirm('Arquivar este post?')){ 
+        p.archived = true; 
+        Data.save(); 
+        drawInsights(); 
+      }
+    };
+
+    // excluir
+    row.querySelector('[data-del]').onclick = ()=>{
+      if(confirm('Excluir este post definitivamente?')){
+        const ix = s.posts.findIndex(x=>x.id===p.id);
+        if(ix>=0){ 
+          s.posts.splice(ix,1); 
+          Data.save(); 
+          drawInsights(); 
+        }
+      }
     };
 
     box.appendChild(row);
