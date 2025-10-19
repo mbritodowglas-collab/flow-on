@@ -1,16 +1,13 @@
 /* ==============================================================
    Flow On — Hábitos (Journal)
-   - Lista de hábitos
    - Rastreador semanal com 7 bolinhas
-   - Clique só no dia de HOJE (verde)
+   - Clique apenas no dia de HOJE (verde) → pode marcar e desmarcar
    - Dias passados não marcados viram vermelho automático (sem retroativo)
-   - Estrutura salva em:
-     state.journal.habits = { items:[{id,title}], marks:{ 'YYYY-MM-DD': { [id]: 1|0 } } }
    ============================================================== */
 
 (function(){
   const KEY = 'flowon';
-  // ---------- util datas (LOCAL) ----------
+  // ---------- util datas ----------
   const toISO = d => {
     const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0');
     return `${y}-${m}-${day}`;
@@ -29,24 +26,21 @@
     S.journal.habits ||= { items:[], marks:{} };
     S.journal.habits.items ||= [];
     S.journal.habits.marks ||= {};
-    save(); // garante chaves
+    save();
   }
   function save(){ localStorage.setItem(KEY, JSON.stringify(S)); }
-
-  // ---------- helpers ----------
   function uid(){ return 'h_' + Math.random().toString(36).slice(2,9); }
 
-  // Preenche automaticamente “miss” (0) para dias passados que ficaram em aberto
+  // Preenche automaticamente “miss” (0) para dias passados sem marca
   function backfillMisses(){
     const H = S.journal.habits;
     const isoToday = todayISO();
-    // vamos olhar só a semana corrente para performance
     const days = week(isoToday);
     for(const d of days){
-      if(d >= isoToday) continue; // só dias passados
+      if(d >= isoToday) continue;
       H.marks[d] ||= {};
       for(const it of H.items){
-        if(!(it.id in H.marks[d])) H.marks[d][it.id] = 0; // 0 = falhou (vermelho)
+        if(!(it.id in H.marks[d])) H.marks[d][it.id] = 0; // vermelho
       }
     }
   }
@@ -65,15 +59,14 @@
       return;
     }
 
-    root.innerHTML = H.items.map((it)=>{
-      // monta grid da semana
+    root.innerHTML = H.items.map(it=>{
       const cells = days.map((d,idx)=>{
         const v = (H.marks[d] && H.marks[d][it.id]);
         const isToday = d === isoToday;
         let cls = 'mark';
-        if(v === 1) cls += ' done';
-        else if(v === 0 && d < isoToday) cls += ' miss';
-        else if(isToday) cls += ' today';
+        if(isToday) cls += ' today';            // hoje sempre clicável
+        if(v === 1) cls += ' done';             // feito
+        else if(v === 0 && d < isoToday) cls += ' miss'; // falhou
         const label = `${dayNames[idx]} ${parse(d).getDate().toString().padStart(2,'0')}`;
         return `<div class="day-cell">
                   <div class="day-name">${label}</div>
@@ -94,13 +87,12 @@
       `;
     }).join('');
 
-    // binds
+    // excluir hábito
     root.querySelectorAll('[data-del]').forEach(btn=>{
-      btn.onclick = () => {
+      btn.onclick = ()=>{
         const id = btn.getAttribute('data-del');
         if(!confirm('Excluir esse hábito?')) return;
         S.journal.habits.items = S.journal.habits.items.filter(h=>h.id!==id);
-        // também limpa as marcas desse hábito
         for(const d in S.journal.habits.marks){
           if(S.journal.habits.marks[d] && (id in S.journal.habits.marks[d])) delete S.journal.habits.marks[d][id];
         }
@@ -108,13 +100,12 @@
       };
     });
 
-    // clique apenas no “hoje”
+    // marca/desmarca hoje
     root.querySelectorAll('.mark.today').forEach(dot=>{
-      dot.onclick = () => {
+      dot.onclick = ()=>{
         const id = dot.getAttribute('data-id');
-        const d  = dot.getAttribute('data-date'); // sempre hoje
+        const d  = dot.getAttribute('data-date');
         S.journal.habits.marks[d] ||= {};
-        // alterna entre indefinido -> 1 (feito) -> indefinido
         S.journal.habits.marks[d][id] = S.journal.habits.marks[d][id] === 1 ? undefined : 1;
         if(S.journal.habits.marks[d][id] === undefined) delete S.journal.habits.marks[d][id];
         save(); render();
@@ -122,10 +113,9 @@
     });
   }
 
-  // ---------- eventos header ----------
+  // ---------- header ----------
   function bindHeader(){
-    const btnAdd = document.getElementById('btnAdd');
-    btnAdd.onclick = () => {
+    document.getElementById('btnAdd').onclick = ()=>{
       const title = prompt('Nome do hábito:');
       if(!title) return;
       S.journal.habits.items.push({ id: uid(), title });
