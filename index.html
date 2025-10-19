@@ -87,30 +87,36 @@
     <p>Flow On © 2025 — Planeje. Execute. Evolua.</p>
   </footer>
 
-  <!-- JS PRINCIPAL (seu app atual) -->
-  <script src="assets/js/app.js?v=8"></script>
+  <!-- Seu JS principal (mantém o que já existe) -->
+  <script src="assets/js/app.js?v=9"></script>
 
-  <!-- SCRIPT EMBUTIDO: KPIs + Trimestral + 21 dias -->
+  <!-- Script embutido: KPIs + Trimestral (robusto) + Painel 21 dias -->
   <script>
-  (function(){
-    console.log("[FlowOn Home] Script ativo ✅");
+  document.addEventListener('DOMContentLoaded', function(){
+    console.log('[FlowOn Home] Script ativo ✅');
 
+    // ===== Storage base =====
     const KEY='flowon';
-    let S={}; try{ S=JSON.parse(localStorage.getItem(KEY)||'{}'); }catch(e){S={};}
+    let S={};
+    try{ S=JSON.parse(localStorage.getItem(KEY)||'{}'); }catch(e){ S={}; }
     const J=()=>{ S.journal ||= {}; return S.journal; };
 
     // ===== Helpers =====
     const toISO=d=>d.toISOString().slice(0,10);
     const todayISO=()=>{ const d=new Date(); d.setHours(0,0,0,0); return toISO(d); };
     const addDays=(iso,n)=>{ const d=new Date(iso+'T00:00:00'); d.setDate(d.getDate()+n); return toISO(d); };
-    const firstDow=(iso=todayISO())=>{ const d=new Date(iso+'T00:00:00'); const k=(d.getDay()+6)%7; d.setDate(d.getDate()-k); return toISO(d); };
+    const firstDow=(iso=todayISO())=>{
+      const d=new Date(iso+'T00:00:00'); const k=(d.getDay()+6)%7; d.setDate(d.getDate()-k); return toISO(d);
+    };
     const qKey=(y,q)=>`${y}-T${q}`, qLabel=(y,q)=>`T${q} de ${y}`;
     const quarter=iso=>{ const d=new Date(iso+'T00:00:00'); return {year:d.getFullYear(), q:Math.floor(d.getMonth()/3)+1}; };
     const setText=(id,txt)=>{ const el=document.getElementById(id); if(el) el.textContent=txt; };
 
-    // ===== KPIs =====
-    (function(){
+    // ===== KPIs (hábitos/semana, dailies/7d, conteúdos próximos/7d) =====
+    (function renderKPIs(){
       let habitsPct='—', d7='0', posts7='0';
+
+      // Hábitos da semana
       try{
         const H=J().habits;
         if(H?.items?.length){
@@ -127,8 +133,9 @@
           }
           habitsPct = total? (Math.round(done/total*100)+'%') : '—';
         }
-      }catch(e){ console.warn("[FlowOn] KPI hábitos:", e); }
+      }catch(e){ console.warn('[FlowOn] KPI hábitos:', e); }
 
+      // Dailies 7 dias
       try{
         const D=J().daily?.byDate||{}; let c=0;
         for(let i=0;i<7;i++){
@@ -138,6 +145,7 @@
         d7=String(c);
       }catch(e){}
 
+      // Conteúdos próximos 7 dias
       try{
         const sched=(S.content?.scheduled)||(S.themes?.scheduled)||{};
         let c=0;
@@ -149,19 +157,23 @@
         }
         posts7=String(c);
       }catch(e){}
+
       setText('kpi-habits',habitsPct);
       setText('kpi-dailies',d7);
       setText('kpi-posts',posts7);
     })();
 
-    // ===== Trimestral =====
-    (function(){
+    // ===== Visão do Trimestre (lookup robusto) =====
+    (function renderQuarter(){
       const {year,q}=quarter(todayISO());
       const key=qKey(year,q);
-      setText('quarter-label',`(${qLabel(year,q)})`);
+      setText('quarter-label', `(${qLabel(year,q)})`);
 
       const roots=[
-        J().tri, J().quarterly, J().trimestral, J()
+        J().tri,          // recomendado: { byQuarter: { 'YYYY-TQ': '...' } }
+        J().quarterly,
+        J().trimestral,
+        J()               // fallback: journal['YYYY-TQ']
       ].filter(Boolean);
 
       let notes='';
@@ -171,22 +183,27 @@
         if(r[key]) { notes=r[key]; break; }
       }
       if(!notes){
+        // última tentativa: procurar chave que termine com "YYYY-TQ"
         const any=roots.find(r=>typeof r==='object');
         if(any){
           const k=Object.keys(any).find(k=>k.endsWith(key));
           if(k) notes=any[k];
         }
       }
-      setText('quarter-notes',notes||'Sem anotações do trimestre ainda.');
+      setText('quarter-notes', notes || 'Sem anotações do trimestre ainda.');
     })();
 
-    // ===== Painel 21 dias =====
-    (function(){
+    // ===== Painel "📈 21 dias" dos hábitos =====
+    (function habits21(){
       const H=J().habits;
       const btn=document.getElementById('btn-habits-21');
       const panel=document.getElementById('habits-21-panel');
-      if(!btn||!panel)return;
-      if(!H?.items?.length){btn.style.display='none';return;}
+      if(!btn||!panel) return;
+
+      if(!H?.items?.length){
+        btn.style.display='none';
+        return;
+      }
 
       function build(){
         panel.innerHTML='';
@@ -197,7 +214,7 @@
           const grid=document.createElement('div'); grid.className='fo-dots';
           for(let i=20;i>=0;i--){
             const d=addDays(todayISO(),-i), m=H.marks?.[d];
-            const on=m?(Array.isArray(m)?m.includes(id):!!m[id]):false;
+            const on = m ? (Array.isArray(m)?m.includes(id):!!m[id]) : false;
             const dot=document.createElement('div'); dot.className='fo-dot'+(on?' on':''); dot.title=d;
             grid.appendChild(dot);
           }
@@ -205,14 +222,14 @@
         });
       }
 
-      btn.onclick=()=>{
-        const open=panel.style.display!=='none';
-        if(open){panel.style.display='none'; btn.textContent='📈 21 dias';}
-        else {build(); panel.style.display='block'; btn.textContent='Ocultar 21 dias';}
-      };
+      btn.addEventListener('click', ()=>{
+        const open = panel.style.display!=='none';
+        if(open){ panel.style.display='none'; btn.textContent='📈 21 dias'; }
+        else { build(); panel.style.display='block'; btn.textContent='Ocultar 21 dias'; }
+      });
     })();
 
-  })();
+  });
   </script>
 </body>
 </html>
