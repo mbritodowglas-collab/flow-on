@@ -183,8 +183,8 @@
   <script>
   document.addEventListener('DOMContentLoaded', function(){
     /* ===== Estados ===== */
-    const KEY_V2='flowon.v2';
-    const KEY_OLD='flowon';
+    const KEY_V2='flowon.v2';   // novo
+    const KEY_OLD='flowon';     // legado (Temas grava aqui!)
     let S={}, SOLD={};
     try{ S=JSON.parse(localStorage.getItem(KEY_V2)||'{}'); }catch(e){S={};}
     try{ SOLD=JSON.parse(localStorage.getItem(KEY_OLD)||'{}'); }catch(e){SOLD={};}
@@ -196,8 +196,6 @@
     const parseLocal=iso=>{const [y,m,d]=(iso||'').split('-').map(Number);return new Date(y,(m||1)-1,d||1);};
     const mondayOfWeekISO=iso=>{const d=parseLocal(iso);const off=(d.getDay()+6)%7;d.setDate(d.getDate()-off);return toISO(d);};
     const weekRangeFromISO=iso=>{const mon=mondayOfWeekISO(iso);return[...Array(7)].map((_,i)=>addDays(mon,i));};
-    const weekKeyOfISO=iso=>{const d=parseLocal(iso);const onejan=new Date(d.getFullYear(),0,1);const day=Math.floor((d-onejan)/86400000)+1;const wk=Math.ceil((day+((onejan.getDay()+6)%7))/7);return `${d.getFullYear()}-W${String(wk).padStart(2,'0')}`;};
-    const dayIndexOfISO=iso=>{const d=parseLocal(iso);return (d.getDay()+6)%7;};
 
     /* ===== Hábitos (espelho da página de Hábitos) ===== */
     const getHabitsData=()=>{
@@ -244,17 +242,21 @@
         }).length;
       }
 
-      // conteúdos próximos 7 dias (v2 posts)
+      // conteúdos próximos 7 dias: soma Posts v2 + Themes.plan (LEGADO!)
       let posts7 = 0;
       for(let i=0;i<7;i++){
         const d=addDays(todayISO(), i);
-        const arr=(S.posts||[]).filter(p=>!p.archived && p.status!=='Rascunho' && p.date===d);
-        posts7 += arr.length;
+        const postsV2=(S.posts||[]).filter(p=>!p.archived && p.status!=='Rascunho' && p.date===d).length;
+        const plansThemes=(SOLD.content?.plan||[]).filter(p=>p.date===d && p.status!=='posted').length;
+        posts7 += postsV2 + plansThemes;
       }
 
-      document.getElementById('kpi-habits').textContent=habitsPct;
-      document.getElementById('kpi-dailies').textContent=String(d7);
-      document.getElementById('kpi-posts').textContent=String(posts7);
+      const elH=document.getElementById('kpi-habits');
+      const elD=document.getElementById('kpi-dailies');
+      const elP=document.getElementById('kpi-posts');
+      if(elH) elH.textContent=habitsPct;
+      if(elD) elD.textContent=String(d7);
+      if(elP) elP.textContent=String(posts7);
     })();
 
     /* ===== Trimestre ===== */
@@ -314,7 +316,7 @@
       el.innerHTML=html+`<div class="muted" style="margin-top:6px">* visão geral — edite em Journal → Hábitos</div>`;
     })();
 
-    /* ===== 21 dias ===== */
+    /* ===== 21 dias (só leitura) ===== */
     (function setupHabits21(){
       const btn=document.getElementById('btn-habits-21');
       const panel=document.getElementById('habits-21-panel');
@@ -350,7 +352,7 @@
       });
     })();
 
-    /* ===== Agenda de Conteúdo (espelha Themes.plan + Posts v2) ===== */
+    /* ===== Agenda de Conteúdo (S.posts + SOLD.content.plan) ===== */
     (function renderContentSummary(){
       const el = document.getElementById('content-summary');
       if(!el) return;
@@ -361,7 +363,7 @@
       const TYPE_LABEL = { yt_long:'YouTube', short:'Reels/TikTok', carousel:'Carrossel', static:'Imagem', blog:'Blog' };
       const KIND_LABEL = { youtube:'YouTube', short:'Reels/TikTok', carousel:'Carrossel', static:'Imagem', blog:'Blog' };
 
-      const statusBadgePosts = (dateStr, status)=>{
+      const badgePosts = (dateStr, status)=>{
         if(status==='Agendado'){
           if(dateStr < today) return `<span class="badge" style="background:#321; border-color:#633; color:#f8d7da">Atrasado</span>`;
           if(dateStr === today) return `<span class="badge" style="background:#332b00; border-color:#806b00; color:#ffec99">Pendente</span>`;
@@ -370,8 +372,8 @@
         if(status==='Publicado') return `<span class="badge" style="background:#0e2a3a; border-color:#1f5168; color:#a8e1ff">Publicado</span>`;
         return '';
       };
-      const statusBadgePlan = (dateStr, status)=>{
-        if(status==='scheduled'){
+      const badgePlan = (dateStr, status)=>{
+        if((status||'scheduled')==='scheduled'){
           if(dateStr < today) return `<span class="badge" style="background:#321; border-color:#633; color:#f8d7da">Atrasado</span>`;
           if(dateStr === today) return `<span class="badge" style="background:#332b00; border-color:#806b00; color:#ffec99">Hoje</span>`;
           return `<span class="badge" style="background:#102915; border-color:#1f6f34; color:#b7ffd1">Agendado</span>`;
@@ -388,20 +390,18 @@
           .map(p=>{
             const theme = (S.themes||[]).find(t=>t.id===p.themeId);
             const label = TYPE_LABEL[p.type] || p.type || 'Post';
-            const badge = statusBadgePosts(p.date, p.status);
             return `<div class="small badge" style="display:flex; align-items:center; gap:6px; margin:2px 4px 0 0">
-              <span>${theme?.title||p.title||'—'} • ${label}</span>${badge}
+              <span>${theme?.title||p.title||'—'} • ${label}</span>${badgePosts(p.date, p.status)}
             </div>`;
           });
 
-        // Themes.plan
-        const plans = (S.content?.plan||[])
+        // Themes.plan (LEGADO em SOLD)
+        const plans = (SOLD.content?.plan||[])
           .filter(it=> it.date === d)
           .map(it=>{
             const label = KIND_LABEL[it.kind] || it.kind || 'Post';
-            const badge = statusBadgePlan(it.date, it.status||'scheduled');
             return `<div class="small badge" style="display:flex; align-items:center; gap:6px; margin:2px 4px 0 0">
-              <span>${it.title||'—'} • ${label}</span>${badge}
+              <span>${it.title||'—'} • ${label}</span>${badgePlan(it.date, it.status)}
             </div>`;
           });
 
@@ -416,12 +416,14 @@
       el.innerHTML = html;
     })();
 
-    /* ===== Resumo do Journal (Monthly) ===== */
+    /* ===== Resumo do Journal (Monthly) — v2 + legado ===== */
     (function renderJournalSummary(){
       const el = document.getElementById('journal-summary');
       if(!el) return;
       const dates = weekRangeFromISO(todayISO());
-      const items = (S.journal?.month?.items || []).filter(it=> !it.archived);
+      const itemsV2   = (S.journal?.month?.items || []).filter(it=> !it.archived);
+      const itemsOld  = (SOLD.journal?.month?.items || []).filter(it=> !it.archived);
+      const items = [...itemsV2, ...itemsOld];
 
       let html = '';
       dates.forEach(d=>{
@@ -464,4 +466,3 @@
   </script>
 </body>
 </html>
-```0
