@@ -25,7 +25,7 @@ Unir **neurociência + planejamento** para reduzir fricção, transformar ideias
 ## 🪶 Autor
 
 **Márcio Dowglas — Personal Trainer & NeuroCoach**  
-Instagram: [@mdpersonal](https://www.instagram.com/marciodowglasfitness)  
+Instagram: [@marciodowglasfitness](https://www.instagram.com/marciodowglasfitness)  
 Site/Blog: https://mbritodowglas.github.io/mdpersonal/
 
 ## 📄 Licença
