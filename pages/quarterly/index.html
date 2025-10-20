@@ -4,8 +4,31 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Flow On — Trimestral</title>
+
   <!-- caminho correto da página até /assets -->
   <link rel="stylesheet" href="../../assets/css/style.css" />
+
+  <!-- HOTFIX: garante cliques no conteúdo e não “congela” os botões -->
+  <style id="journal-hotfix">
+    /* conteúdo sempre clicável acima de overlays/sticky */
+    main, .container, .card { position: relative; z-index: 2; }
+
+    /* caso alguma página do journal use o dock novo (.fo-nav), 
+       o nav não bloqueia o toque do conteúdo */
+    .fo-nav { pointer-events: none; }
+    .fo-nav .fo-item { pointer-events: auto; }
+
+    /* mantém topbar/dock visíveis sem cobrir tudo */
+    .fo-topbar, .fo-nav { z-index: 50; }
+  </style>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const cont = document.querySelector('.container');
+      if (cont && parseInt(getComputedStyle(cont).marginTop) < 12) {
+        cont.style.marginTop = '18px';
+      }
+    });
+  </script>
 </head>
 <body>
   <header class="navbar">
