@@ -1,7 +1,6 @@
-/* Flow On — Conteúdos (Themes) v6
-   Ajuste de Rascunhos: inline (estilo Daily), multi-destino e multi-data.
-   Não altera a criação de ideias nem o planejamento (agenda) já existente.
-   Depende de window.Data (core.js). Se não houver, cria um fallback leve.
+/* Flow On — Conteúdos (Themes) v6.1
+   Ajuste: seletor visual de ideias no "+ Criar rascunho" (sem prompt).
+   Rascunhos inline multi-destino e agenda inalterados.
 */
 
 // ---------- DATA LAYER ----------
@@ -22,7 +21,7 @@ function S(){
   const s = Data.get();
   s.content ||= {};
   s.content.ideas ||= [];        // [{id,title}]
-  s.content.drafts ||= [];       // [{id,title,kind}] (kind opcional – mantido p/ compat)
+  s.content.drafts ||= [];       // [{id,title,kind}]
   s.content.plan ||= [];         // [{id,title,kind,date,status:'scheduled'}]
   s.content.analysis ||= [];     // [{id,title,kind,date,views,likes,comments,clicks,notes,archived}]
   return s;
@@ -38,27 +37,11 @@ const KIND_LABEL = {
   blog: 'Blog'
 };
 function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
-function todayISO(){
-  const t = new Date(); t.setHours(0,0,0,0);
-  return t.toISOString().slice(0,10);
-}
-function addDaysISO(iso, n){
-  const d = new Date(iso+'T00:00:00'); d.setDate(d.getDate()+n);
-  return d.toISOString().slice(0,10);
-}
-function next30Range(){
-  const start = todayISO();
-  const end = addDaysISO(start, 29);
-  return {start, end};
-}
-function inNext30(iso){
-  const {start,end} = next30Range();
-  return iso >= start && iso <= end;
-}
-function fmtDayLabel(d){
-  const dt = new Date(d+'T00:00:00');
-  return dt.toLocaleDateString('pt-BR', { weekday:'short', day:'2-digit'});
-}
+function todayISO(){ const t=new Date(); t.setHours(0,0,0,0); return t.toISOString().slice(0,10); }
+function addDaysISO(iso,n){ const d=new Date(iso+'T00:00:00'); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); }
+function next30Range(){ const start=todayISO(); const end=addDaysISO(start,29); return {start,end}; }
+function inNext30(iso){ const {start,end}=next30Range(); return iso>=start && iso<=end; }
+function fmtDayLabel(d){ const dt=new Date(d+'T00:00:00'); return dt.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit'}); }
 
 // ---------- RENDER: IDEIAS (inalterado) ----------
 function renderIdeas(){
@@ -78,9 +61,7 @@ function renderIdeas(){
     const row = document.createElement('div');
     row.className = 'item';
     row.innerHTML = `
-      <div>
-        <strong>${escapeHtml(it.title)}</strong>
-      </div>
+      <div><strong>${escapeHtml(it.title)}</strong></div>
       <div class="flex">
         <button class="btn small" data-act="use" data-id="${it.id}">Usar no rascunho</button>
         <button class="btn small danger" data-act="del" data-id="${it.id}">Excluir</button>
@@ -89,7 +70,6 @@ function renderIdeas(){
     wrap.appendChild(row);
   });
 
-  // ações
   wrap.querySelectorAll('[data-act="del"]').forEach(btn=>{
     btn.onclick = ()=>{
       const id = btn.getAttribute('data-id');
@@ -98,13 +78,14 @@ function renderIdeas(){
       Data.save(); renderIdeas();
     };
   });
+
+  // fluxo rápido: usar direto
   wrap.querySelectorAll('[data-act="use"]').forEach(btn=>{
     btn.onclick = ()=>{
       const id = btn.getAttribute('data-id');
       const s = S();
       const idea = s.content.ideas.find(x=>x.id===id);
       if(!idea) return;
-      // escolher formato (compat com fluxo antigo)
       const kind = prompt('Destino do rascunho (youtube|short|carousel|static|blog):','youtube');
       if(!kind || !KIND_LABEL[kind]) return alert('Formato inválido.');
       s.content.drafts.push({ id: uid('d'), title: idea.title, kind });
@@ -131,12 +112,8 @@ function renderPlan(){
     .filter(p=>inNext30(p.date))
     .sort((a,b)=>a.date.localeCompare(b.date));
 
-  // agrupar por dia
   const byDay = {};
-  items.forEach(it=>{
-    byDay[it.date] ||= [];
-    byDay[it.date].push(it);
-  });
+  items.forEach(it=>{ (byDay[it.date] ||= []).push(it); });
 
   wrap.innerHTML = '';
   const {start,end} = next30Range();
@@ -162,7 +139,6 @@ function renderPlan(){
     cursor = addDaysISO(cursor, 1);
   }
 
-  // ações dos itens do planejamento
   wrap.querySelectorAll('[data-act="unschedule"]').forEach(btn=>{
     btn.onclick = ()=>{
       const id = btn.getAttribute('data-id');
@@ -170,7 +146,6 @@ function renderPlan(){
       const p = s.content.plan.find(x=>x.id===id);
       if(!p) return;
       s.content.plan = s.content.plan.filter(x=>x.id!==id);
-      // devolve ao rascunho (mantém o título e o kind do item)
       s.content.drafts.push({ id: uid('d'), title: p.title, kind: p.kind });
       Data.save(); renderDrafts(); renderPlan();
     };
@@ -181,12 +156,10 @@ function renderPlan(){
       const s = S();
       const p = s.content.plan.find(x=>x.id===id);
       if(!p) return;
-      // abre análise com dados preenchidos
       document.getElementById('anTitle').value = p.title;
       document.getElementById('anFormat').value = p.kind;
       document.getElementById('anDate').value = p.date;
       document.getElementById('anStatus').value = 'posted';
-      // remove do plano
       s.content.plan = s.content.plan.filter(x=>x.id!==id);
       Data.save(); renderPlan();
       window.scrollTo({top: document.getElementById('analysisForm').offsetTop-40, behavior:'smooth'});
@@ -199,7 +172,7 @@ function renderAnalysisRecent(){
   const wrap = document.getElementById('analysisRecent');
   if(!wrap) return;
   const s = S();
-  const list = s.content.analysis.slice(-5).reverse(); // últimas 5
+  const list = s.content.analysis.slice(-5).reverse();
   wrap.innerHTML = '';
   if(list.length===0){
     wrap.innerHTML = `<div class="empty">Sem análises recentes.</div>`;
@@ -221,10 +194,8 @@ function renderAnalysisRecent(){
   });
 }
 
-// =============== RASCUNHOS (NOVO: inline multi-destino) ===============
+// =============== RASCUNHOS (inline multi-destino) ===============
 let currentFilter = 'all';
-
-// pega agendamentos já existentes que combinam por título (visão rápida)
 function getPlansByTitle(title){
   const s = S();
   return (s.content.plan||[])
@@ -254,9 +225,7 @@ function renderDrafts(){
 
     const scheduled = getPlansByTitle(d.title);
     const scheduledHtml = scheduled.length
-      ? scheduled.map(p=>`<span class="pill" style="margin:2px 6px 0 0">
-            ${KIND_LABEL[p.kind]||p.kind} • ${p.date}
-          </span>`).join('')
+      ? scheduled.map(p=>`<span class="pill" style="margin:2px 6px 0 0">${KIND_LABEL[p.kind]||p.kind} • ${p.date}</span>`).join('')
       : `<span class="muted">Sem agendamentos para este título.</span>`;
 
     const row = document.createElement('div');
@@ -298,7 +267,6 @@ function renderDrafts(){
     `;
     wrap.appendChild(row);
 
-    // handler: adicionar agendamento (NÃO remove o rascunho)
     const btnAdd = row.querySelector('#'+addId);
     btnAdd.onclick = ()=>{
       const kind = (row.querySelector('#'+selId).value)||'youtube';
@@ -306,30 +274,18 @@ function renderDrafts(){
       if(!/^\d{4}-\d{2}-\d{2}$/.test(date)) return alert('Data inválida (use AAAA-MM-DD).');
 
       const s = S();
-      s.content.plan.push({
-        id: uid('p'),
-        title: d.title,
-        kind,
-        date,
-        status: 'scheduled'
-      });
+      s.content.plan.push({ id: uid('p'), title: d.title, kind, date, status: 'scheduled' });
       Data.save();
 
-      // atualiza listinha dos agendamentos exibidos no cartão
       const sched = getPlansByTitle(d.title);
-      const html = sched.length
-        ? sched.map(p=>`<span class="pill" style="margin:2px 6px 0 0">
-              ${KIND_LABEL[p.kind]||p.kind} • ${p.date}
-            </span>`).join('')
+      row.querySelector('#'+planId).innerHTML = sched.length
+        ? sched.map(p=>`<span class="pill" style="margin:2px 6px 0 0">${KIND_LABEL[p.kind]||p.kind} • ${p.date}</span>`).join('')
         : `<span class="muted">Sem agendamentos para este título.</span>`;
-      row.querySelector('#'+planId).innerHTML = html;
 
-      // atualiza painel de planejamento (em baixo)
       renderPlan();
     };
   });
 
-  // excluir rascunho (inalterado)
   wrap.querySelectorAll('[data-act="del"]').forEach(btn=>{
     btn.onclick = ()=>{
       const id = btn.getAttribute('data-id');
@@ -340,7 +296,60 @@ function renderDrafts(){
   });
 }
 
-// ---------- UI EVENTS (botões da página) ----------
+// ---------- Picker visual de ideias (novo, só usado no + Criar rascunho) ----------
+function openIdeaPicker(ideas, onPick){
+  // cria overlay
+  const overlay = document.createElement('div');
+  overlay.style.cssText = `
+    position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,.55);
+    display:flex; align-items:center; justify-content:center; padding:16px;
+  `;
+  const card = document.createElement('div');
+  card.style.cssText = `
+    width:min(680px,96%); max-height:80vh; overflow:auto; border-radius:14px;
+    background:#121212; border:1px solid rgba(255,255,255,.12); padding:14px;
+    box-shadow:0 12px 40px rgba(0,0,0,.45);
+  `;
+  card.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px">
+      <h3 style="margin:0">Escolha uma ideia</h3>
+      <button class="btn small" id="mf-close">✖</button>
+    </div>
+    <div id="mf-list"></div>
+    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+      <button class="btn" id="mf-blank">Criar rascunho em branco</button>
+      <button class="btn" id="mf-cancel">Cancelar</button>
+    </div>
+  `;
+  overlay.appendChild(card);
+  document.body.appendChild(overlay);
+
+  const list = card.querySelector('#mf-list');
+  if(!ideas.length){
+    list.innerHTML = `<div class="empty">Sem ideias por aqui.</div>`;
+  }else{
+    ideas.forEach(it=>{
+      const row = document.createElement('div');
+      row.className = 'item';
+      row.innerHTML = `
+        <div><strong>${escapeHtml(it.title)}</strong></div>
+        <div><button class="btn small" data-pick="${it.id}">Usar esta</button></div>
+      `;
+      list.appendChild(row);
+    });
+  }
+
+  function close(){ overlay.remove(); }
+  card.querySelector('#mf-close').onclick = close;
+  card.querySelector('#mf-cancel').onclick = close;
+  card.querySelector('#mf-blank').onclick = ()=>{ close(); onPick(null); };
+
+  list.querySelectorAll('[data-pick]').forEach(btn=>{
+    btn.onclick = ()=>{ const id = btn.getAttribute('data-pick'); close(); onPick(id); };
+  });
+}
+
+// ---------- UI EVENTS ----------
 function bindUI(){
   // + Ideia
   const btnAddIdea = document.getElementById('btnAddIdea');
@@ -354,32 +363,37 @@ function bindUI(){
     };
   }
 
-  // + Criar rascunho (inalterado; rascunho agora serve de “container” multi-destino)
+  // + Criar rascunho — agora com seletor visual de ideias
   const btnCreateDraft = document.getElementById('btnCreateDraft');
   if(btnCreateDraft){
     btnCreateDraft.onclick = ()=>{
       const s = S();
-      const fromIdeas = s.content.ideas;
-      let title = '';
-      if(fromIdeas.length>0){
-        const list = fromIdeas.map((x,i)=>`${i+1}. ${x.title}`).join('\n');
-        const pick = prompt(`Escolha uma ideia (número) ou deixe vazio para rascunho em branco:\n\n${list}`);
-        if(pick && Number(pick)>=1 && Number(pick)<=fromIdeas.length){
-          title = fromIdeas[Number(pick)-1].title;
-          // remove ideia (vira rascunho)
-          s.content.ideas.splice(Number(pick)-1,1);
+      const ideas = s.content.ideas.slice(); // cópia
+
+      openIdeaPicker(ideas, (pickedId)=>{
+        let title = '';
+        if(pickedId){
+          const idea = ideas.find(i=>i.id===pickedId);
+          if(!idea) return;
+          title = idea.title;
+          // remove a ideia escolhida (vira rascunho)
+          s.content.ideas = s.content.ideas.filter(i=>i.id!==pickedId);
+        }else{
+          // rascunho em branco
+          title = prompt('Título do rascunho:') || 'Sem título';
         }
-      }
-      if(!title) title = prompt('Título do rascunho:')||'Sem título';
-      // `kind` é opcional; serve só pra sugerir o select no cartão
-      const kind = prompt('Destino sugerido (youtube|short|carousel|static|blog). Pode deixar em branco:','youtube') || 'youtube';
-      if(kind && !KIND_LABEL[kind]) return alert('Formato inválido.');
-      s.content.drafts.push({ id: uid('d'), title: title.trim(), kind });
-      Data.save(); renderIdeas(); renderDrafts();
+
+        // destino sugerido (opcional, só pra default do select do cartão)
+        const kind = prompt('Destino sugerido (youtube|short|carousel|static|blog). Pode deixar em branco:','youtube') || 'youtube';
+        if(kind && !KIND_LABEL[kind]) return alert('Formato inválido.');
+
+        s.content.drafts.push({ id: uid('d'), title: title.trim(), kind });
+        Data.save(); renderIdeas(); renderDrafts();
+      });
     };
   }
 
-  // filtros (mantido)
+  // filtros
   document.querySelectorAll('.filters .btn').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       document.querySelectorAll('.filters .btn').forEach(b=>b.classList.remove('active'));
@@ -462,5 +476,5 @@ document.addEventListener('DOMContentLoaded', ()=>{
   renderDrafts();
   renderPlan();
   renderAnalysisRecent();
-  console.log('[themes] pronto v6 (rascunhos inline)');
+  console.log('[themes] pronto v6.1 (picker visual de ideias + rascunhos inline)');
 });
