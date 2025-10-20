@@ -136,7 +136,7 @@
       </div>
     </section>
 
-    <!-- NOVO: Exercício & Reflexão do Dia -->
+    <!-- Exercício & Reflexão do Dia -->
     <section class="fo-card" id="mind365">
       <h2 class="fo-title">Exercício & Reflexão do Dia</h2>
       <div id="mind365-card">
@@ -179,7 +179,7 @@
     <p>Flow On © 2025 — Planeje. Execute. Evolua.</p>
   </footer>
 
-  <!-- ======= SEUS SCRIPTS ORIGINAIS (inalterados) ======= -->
+  <!-- ======= JS ======= -->
   <script>
   document.addEventListener('DOMContentLoaded', function(){
     /* ===== Estados ===== */
@@ -199,9 +199,8 @@
     const weekKeyOfISO=iso=>{const d=parseLocal(iso);const onejan=new Date(d.getFullYear(),0,1);const day=Math.floor((d-onejan)/86400000)+1;const wk=Math.ceil((day+((onejan.getDay()+6)%7))/7);return `${d.getFullYear()}-W${String(wk).padStart(2,'0')}`;};
     const dayIndexOfISO=iso=>{const d=parseLocal(iso);return (d.getDay()+6)%7;};
 
-    /* ===== Hábitos: fonte/forma iguais à página de Hábitos ===== */
+    /* ===== Hábitos (espelho da página de Hábitos) ===== */
     const getHabitsData=()=>{
-      // espelha a página de hábitos (journal.habits.items + marks)
       const H=SOLD?.journal?.habits||{};
       return{
         items:Array.isArray(H.items)?H.items:[],
@@ -245,7 +244,7 @@
         }).length;
       }
 
-      // conteúdos próximos 7 dias (v2)
+      // conteúdos próximos 7 dias (v2 posts)
       let posts7 = 0;
       for(let i=0;i<7;i++){
         const d=addDays(todayISO(), i);
@@ -253,12 +252,9 @@
         posts7 += arr.length;
       }
 
-      const elH=document.getElementById('kpi-habits');
-      const elD=document.getElementById('kpi-dailies');
-      const elP=document.getElementById('kpi-posts');
-      if(elH) elH.textContent=habitsPct;
-      if(elD) elD.textContent=String(d7);
-      if(elP) elP.textContent=String(posts7);
+      document.getElementById('kpi-habits').textContent=habitsPct;
+      document.getElementById('kpi-dailies').textContent=String(d7);
+      document.getElementById('kpi-posts').textContent=String(posts7);
     })();
 
     /* ===== Trimestre ===== */
@@ -285,7 +281,7 @@
       if(el) el.textContent = notes || 'Sem anotações do trimestre ainda.';
     })();
 
-    /* ===== Hábitos (semana) — espelho da página de Hábitos ===== */
+    /* ===== Hábitos (semana) ===== */
     (function renderHabitsSummary(){
       const el=document.getElementById('habits-summary');
       if(!el)return;
@@ -318,7 +314,7 @@
       el.innerHTML=html+`<div class="muted" style="margin-top:6px">* visão geral — edite em Journal → Hábitos</div>`;
     })();
 
-    /* ===== 21 dias (espelho) ===== */
+    /* ===== 21 dias ===== */
     (function setupHabits21(){
       const btn=document.getElementById('btn-habits-21');
       const panel=document.getElementById('habits-21-panel');
@@ -354,14 +350,18 @@
       });
     })();
 
-    /* ===== Agenda de Conteúdo (v2) ===== */
+    /* ===== Agenda de Conteúdo (espelha Themes.plan + Posts v2) ===== */
     (function renderContentSummary(){
       const el = document.getElementById('content-summary');
       if(!el) return;
+
       const dates = weekRangeFromISO(todayISO());
       const today = todayISO();
 
-      const statusBadge = (dateStr, status)=>{
+      const TYPE_LABEL = { yt_long:'YouTube', short:'Reels/TikTok', carousel:'Carrossel', static:'Imagem', blog:'Blog' };
+      const KIND_LABEL = { youtube:'YouTube', short:'Reels/TikTok', carousel:'Carrossel', static:'Imagem', blog:'Blog' };
+
+      const statusBadgePosts = (dateStr, status)=>{
         if(status==='Agendado'){
           if(dateStr < today) return `<span class="badge" style="background:#321; border-color:#633; color:#f8d7da">Atrasado</span>`;
           if(dateStr === today) return `<span class="badge" style="background:#332b00; border-color:#806b00; color:#ffec99">Pendente</span>`;
@@ -370,25 +370,49 @@
         if(status==='Publicado') return `<span class="badge" style="background:#0e2a3a; border-color:#1f5168; color:#a8e1ff">Publicado</span>`;
         return '';
       };
+      const statusBadgePlan = (dateStr, status)=>{
+        if(status==='scheduled'){
+          if(dateStr < today) return `<span class="badge" style="background:#321; border-color:#633; color:#f8d7da">Atrasado</span>`;
+          if(dateStr === today) return `<span class="badge" style="background:#332b00; border-color:#806b00; color:#ffec99">Hoje</span>`;
+          return `<span class="badge" style="background:#102915; border-color:#1f6f34; color:#b7ffd1">Agendado</span>`;
+        }
+        if(status==='posted') return `<span class="badge" style="background:#0e2a3a; border-color:#1f5168; color:#a8e1ff">Publicado</span>`;
+        return '';
+      };
 
       let html = '';
       dates.forEach(d=>{
-        const items = (S.posts||[]).filter(p=> !p.archived && p.status!=='Rascunho' && p.date === d);
-        const list = items.length
-          ? items.map(p=>{
-              const theme = (S.themes||[]).find(t=>t.id===p.themeId);
-              const labelMap = {yt_long:'YouTube',short:'Reels/TikTok',carousel:'Carrossel',static:'Imagem',blog:'Blog'};
-              const label = labelMap[p.type] || p.type || 'Post';
-              return `<div class="small badge" style="display:flex; align-items:center; gap:6px; margin:2px 4px 0 0">
-                <span>${theme?.title||'—'} • ${label}</span>${statusBadge(p.date, p.status)}
-              </div>`;
-            }).join('')
-          : `<span class="muted">Sem itens</span>`;
+        // Posts v2
+        const posts = (S.posts||[])
+          .filter(p=> !p.archived && p.status!=='Rascunho' && p.date === d)
+          .map(p=>{
+            const theme = (S.themes||[]).find(t=>t.id===p.themeId);
+            const label = TYPE_LABEL[p.type] || p.type || 'Post';
+            const badge = statusBadgePosts(p.date, p.status);
+            return `<div class="small badge" style="display:flex; align-items:center; gap:6px; margin:2px 4px 0 0">
+              <span>${theme?.title||p.title||'—'} • ${label}</span>${badge}
+            </div>`;
+          });
+
+        // Themes.plan
+        const plans = (S.content?.plan||[])
+          .filter(it=> it.date === d)
+          .map(it=>{
+            const label = KIND_LABEL[it.kind] || it.kind || 'Post';
+            const badge = statusBadgePlan(it.date, it.status||'scheduled');
+            return `<div class="small badge" style="display:flex; align-items:center; gap:6px; margin:2px 4px 0 0">
+              <span>${it.title||'—'} • ${label}</span>${badge}
+            </div>`;
+          });
+
+        const blocks = [...posts, ...plans];
+        const list = blocks.length ? blocks.join('') : `<span class="muted">Sem itens</span>`;
 
         const display = parseLocal(d).toLocaleDateString('pt-BR',{weekday:'short', day:'2-digit'});
         html += `<div class="list-day"><div class="list-day-head">
-            <span>${display}</span><span class="muted">semana</span></div><div>${list}</div></div>`;
+          <span>${display}</span><span class="muted">semana</span></div><div>${list}</div></div>`;
       });
+
       el.innerHTML = html;
     })();
 
@@ -426,9 +450,10 @@
   });
   </script>
 
-  <!-- NOVO include: injeta o exercício & reflexão do dia no #mind365-card -->
+  <!-- Mind365: exercício/reflexão do dia -->
   <script src="assets/js/mind365.js"></script>
 
+  <!-- Service Worker -->
   <script>
   if('serviceWorker'in navigator){
     window.addEventListener('load',()=>{
@@ -439,3 +464,4 @@
   </script>
 </body>
 </html>
+```0
