@@ -1,5 +1,6 @@
-/* Flow On — Conteúdos (Themes) v5
-   Liga os botões da página e mantém dados em localStorage.
+/* Flow On — Conteúdos (Themes) v6
+   Ajuste de Rascunhos: inline (estilo Daily), multi-destino e multi-data.
+   Não altera a criação de ideias nem o planejamento (agenda) já existente.
    Depende de window.Data (core.js). Se não houver, cria um fallback leve.
 */
 
@@ -21,9 +22,9 @@ function S(){
   const s = Data.get();
   s.content ||= {};
   s.content.ideas ||= [];        // [{id,title}]
-  s.content.drafts ||= [];       // [{id,title,kind}]  kind: youtube|short|carousel|static|blog
+  s.content.drafts ||= [];       // [{id,title,kind}] (kind opcional – mantido p/ compat)
   s.content.plan ||= [];         // [{id,title,kind,date,status:'scheduled'}]
-  s.content.analysis ||= [];     // [{id,title,kind,date,views,likes,comments,clicks,notes,archived:boolean}]
+  s.content.analysis ||= [];     // [{id,title,kind,date,views,likes,comments,clicks,notes,archived}]
   return s;
 }
 function uid(prefix='i'){ return `${prefix}_${Math.random().toString(36).slice(2,9)}`; }
@@ -36,11 +37,7 @@ const KIND_LABEL = {
   static: 'Imagem estática',
   blog: 'Blog'
 };
-function fmtDayLabel(d){
-  // d = 'YYYY-MM-DD'
-  const dt = new Date(d+'T00:00:00');
-  return dt.toLocaleDateString('pt-BR', { weekday:'short', day:'2-digit'});
-}
+function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 function todayISO(){
   const t = new Date(); t.setHours(0,0,0,0);
   return t.toISOString().slice(0,10);
@@ -58,13 +55,16 @@ function inNext30(iso){
   const {start,end} = next30Range();
   return iso >= start && iso <= end;
 }
+function fmtDayLabel(d){
+  const dt = new Date(d+'T00:00:00');
+  return dt.toLocaleDateString('pt-BR', { weekday:'short', day:'2-digit'});
+}
 
-// ---------- RENDER: IDEIAS ----------
+// ---------- RENDER: IDEIAS (inalterado) ----------
 function renderIdeas(){
   const wrap = document.getElementById('ideasList');
   const s = S();
   const ideas = s.content.ideas;
-  // contador
   const cnt = document.getElementById('ideasCount');
   if(cnt) cnt.textContent = `${ideas.length} ${ideas.length===1?'item':'itens'}`;
 
@@ -104,75 +104,17 @@ function renderIdeas(){
       const s = S();
       const idea = s.content.ideas.find(x=>x.id===id);
       if(!idea) return;
-      // escolher formato
+      // escolher formato (compat com fluxo antigo)
       const kind = prompt('Destino do rascunho (youtube|short|carousel|static|blog):','youtube');
       if(!kind || !KIND_LABEL[kind]) return alert('Formato inválido.');
       s.content.drafts.push({ id: uid('d'), title: idea.title, kind });
-      // remove ideia do banco (como definido por você)
       s.content.ideas = s.content.ideas.filter(x=>x.id!==id);
       Data.save(); renderIdeas(); renderDrafts();
     };
   });
 }
 
-// ---------- RENDER: RASCUNHOS ----------
-let currentFilter = 'all';
-
-function renderDrafts(){
-  const wrap = document.getElementById('draftsList');
-  if(!wrap) return;
-  const s = S();
-  const list = s.content.drafts.filter(d => currentFilter==='all' ? true : d.kind===currentFilter);
-
-  wrap.innerHTML = '';
-  if(list.length===0){
-    wrap.innerHTML = `<div class="empty">Sem rascunhos. Clique em <b>+ Criar rascunho</b> e escolha um destino.</div>`;
-    return;
-  }
-  list.forEach(d=>{
-    const row = document.createElement('div');
-    row.className = 'item';
-    row.innerHTML = `
-      <div>
-        <strong>${escapeHtml(d.title)} — ${KIND_LABEL[d.kind]||d.kind}</strong>
-        <div class="muted">1 rascunho = 1 destino</div>
-      </div>
-      <div class="flex">
-        <button class="btn small" data-act="schedule" data-id="${d.id}">Agendar</button>
-        <button class="btn small danger" data-act="del" data-id="${d.id}">Excluir</button>
-      </div>
-    `;
-    wrap.appendChild(row);
-  });
-
-  wrap.querySelectorAll('[data-act="del"]').forEach(btn=>{
-    btn.onclick = ()=>{
-      const id = btn.getAttribute('data-id');
-      const s = S();
-      s.content.drafts = s.content.drafts.filter(x=>x.id!==id);
-      Data.save(); renderDrafts();
-    };
-  });
-
-  wrap.querySelectorAll('[data-act="schedule"]').forEach(btn=>{
-    btn.onclick = ()=>{
-      const id = btn.getAttribute('data-id');
-      const s = S();
-      const d = s.content.drafts.find(x=>x.id===id);
-      if(!d) return;
-      // data obrigatória
-      const date = prompt('Data de publicação (AAAA-MM-DD):', todayISO());
-      if(!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return alert('Data inválida.');
-      // move para planejamento
-      s.content.plan.push({ id: uid('p'), title: d.title, kind: d.kind, date, status:'scheduled' });
-      s.content.drafts = s.content.drafts.filter(x=>x.id!==id);
-      Data.save(); renderDrafts(); renderPlan();
-      alert('Agendado!');
-    };
-  });
-}
-
-// ---------- RENDER: PLANEJAMENTO (30 DIAS) ----------
+// ---------- RENDER: PLANEJAMENTO (inalterado) ----------
 function renderPlan(){
   const wrap = document.getElementById('planList');
   const rangeEl = document.getElementById('planRangeLabel');
@@ -198,7 +140,6 @@ function renderPlan(){
 
   wrap.innerHTML = '';
   const {start,end} = next30Range();
-  // percorre todos os dias do range (mesmo dias sem item)
   let cursor = start;
   while(cursor <= end){
     const dayItems = byDay[cursor] || [];
@@ -229,6 +170,7 @@ function renderPlan(){
       const p = s.content.plan.find(x=>x.id===id);
       if(!p) return;
       s.content.plan = s.content.plan.filter(x=>x.id!==id);
+      // devolve ao rascunho (mantém o título e o kind do item)
       s.content.drafts.push({ id: uid('d'), title: p.title, kind: p.kind });
       Data.save(); renderDrafts(); renderPlan();
     };
@@ -252,7 +194,7 @@ function renderPlan(){
   });
 }
 
-// ---------- RENDER: ANÁLISE ----------
+// ---------- RENDER: ANÁLISE (inalterado) ----------
 function renderAnalysisRecent(){
   const wrap = document.getElementById('analysisRecent');
   if(!wrap) return;
@@ -279,6 +221,125 @@ function renderAnalysisRecent(){
   });
 }
 
+// =============== RASCUNHOS (NOVO: inline multi-destino) ===============
+let currentFilter = 'all';
+
+// pega agendamentos já existentes que combinam por título (visão rápida)
+function getPlansByTitle(title){
+  const s = S();
+  return (s.content.plan||[])
+    .filter(p => p.title === title)
+    .sort((a,b)=> a.date.localeCompare(b.date));
+}
+
+function renderDrafts(){
+  const wrap = document.getElementById('draftsList');
+  if(!wrap) return;
+  const s = S();
+  const list = s.content.drafts.filter(d => currentFilter==='all' ? true : d.kind===currentFilter);
+
+  wrap.innerHTML = '';
+  if(list.length===0){
+    wrap.innerHTML = `<div class="empty">Sem rascunhos. Clique em <b>+ Criar rascunho</b> e escolha um destino.</div>`;
+    return;
+  }
+
+  list.forEach(d=>{
+    const draftId = d.id;
+    const defaultKind = d.kind && KIND_LABEL[d.kind] ? d.kind : 'youtube';
+    const selId = `kind_${draftId}`;
+    const dateId = `date_${draftId}`;
+    const addId = `add_${draftId}`;
+    const planId = `plans_${draftId}`;
+
+    const scheduled = getPlansByTitle(d.title);
+    const scheduledHtml = scheduled.length
+      ? scheduled.map(p=>`<span class="pill" style="margin:2px 6px 0 0">
+            ${KIND_LABEL[p.kind]||p.kind} • ${p.date}
+          </span>`).join('')
+      : `<span class="muted">Sem agendamentos para este título.</span>`;
+
+    const row = document.createElement('div');
+    row.className = 'item';
+    row.innerHTML = `
+      <div>
+        <strong>${escapeHtml(d.title)}</strong>
+        <div class="muted">Agende quantos destinos e datas quiser abaixo. O rascunho permanece para novos lançamentos.</div>
+      </div>
+
+      <div class="grid-3" style="margin-top:8px; align-items:end">
+        <div>
+          <label class="small">Destino</label>
+          <select id="${selId}">
+            <option value="youtube"${defaultKind==='youtube'?' selected':''}>YouTube</option>
+            <option value="short"${defaultKind==='short'?' selected':''}>Reels/TikTok</option>
+            <option value="carousel"${defaultKind==='carousel'?' selected':''}>Carrossel</option>
+            <option value="static"${defaultKind==='static'?' selected':''}>Imagem</option>
+            <option value="blog"${defaultKind==='blog'?' selected':''}>Blog</option>
+          </select>
+        </div>
+        <div>
+          <label class="small">Data</label>
+          <input type="date" id="${dateId}" value="${todayISO()}"/>
+        </div>
+        <div>
+          <button id="${addId}" class="btn small" style="margin-top:18px">➕ Adicionar ao calendário</button>
+        </div>
+      </div>
+
+      <div style="margin-top:8px">
+        <div class="small muted" style="margin-bottom:4px">Agendamentos existentes para este título</div>
+        <div id="${planId}">${scheduledHtml}</div>
+      </div>
+
+      <div class="flex" style="margin-top:8px">
+        <button class="btn small danger" data-act="del" data-id="${draftId}">Excluir rascunho</button>
+      </div>
+    `;
+    wrap.appendChild(row);
+
+    // handler: adicionar agendamento (NÃO remove o rascunho)
+    const btnAdd = row.querySelector('#'+addId);
+    btnAdd.onclick = ()=>{
+      const kind = (row.querySelector('#'+selId).value)||'youtube';
+      const date = (row.querySelector('#'+dateId).value)||todayISO();
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(date)) return alert('Data inválida (use AAAA-MM-DD).');
+
+      const s = S();
+      s.content.plan.push({
+        id: uid('p'),
+        title: d.title,
+        kind,
+        date,
+        status: 'scheduled'
+      });
+      Data.save();
+
+      // atualiza listinha dos agendamentos exibidos no cartão
+      const sched = getPlansByTitle(d.title);
+      const html = sched.length
+        ? sched.map(p=>`<span class="pill" style="margin:2px 6px 0 0">
+              ${KIND_LABEL[p.kind]||p.kind} • ${p.date}
+            </span>`).join('')
+        : `<span class="muted">Sem agendamentos para este título.</span>`;
+      row.querySelector('#'+planId).innerHTML = html;
+
+      // atualiza painel de planejamento (em baixo)
+      renderPlan();
+    };
+  });
+
+  // excluir rascunho (inalterado)
+  wrap.querySelectorAll('[data-act="del"]').forEach(btn=>{
+    btn.onclick = ()=>{
+      const id = btn.getAttribute('data-id');
+      const s = S();
+      s.content.drafts = s.content.drafts.filter(x=>x.id!==id);
+      Data.save(); renderDrafts();
+    };
+  });
+}
+
 // ---------- UI EVENTS (botões da página) ----------
 function bindUI(){
   // + Ideia
@@ -293,7 +354,7 @@ function bindUI(){
     };
   }
 
-  // + Criar rascunho
+  // + Criar rascunho (inalterado; rascunho agora serve de “container” multi-destino)
   const btnCreateDraft = document.getElementById('btnCreateDraft');
   if(btnCreateDraft){
     btnCreateDraft.onclick = ()=>{
@@ -310,14 +371,15 @@ function bindUI(){
         }
       }
       if(!title) title = prompt('Título do rascunho:')||'Sem título';
-      const kind = prompt('Destino do rascunho (youtube|short|carousel|static|blog):','youtube');
-      if(!kind || !KIND_LABEL[kind]) return alert('Formato inválido.');
+      // `kind` é opcional; serve só pra sugerir o select no cartão
+      const kind = prompt('Destino sugerido (youtube|short|carousel|static|blog). Pode deixar em branco:','youtube') || 'youtube';
+      if(kind && !KIND_LABEL[kind]) return alert('Formato inválido.');
       s.content.drafts.push({ id: uid('d'), title: title.trim(), kind });
       Data.save(); renderIdeas(); renderDrafts();
     };
   }
 
-  // filtros (sticky)
+  // filtros (mantido)
   document.querySelectorAll('.filters .btn').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       document.querySelectorAll('.filters .btn').forEach(b=>b.classList.remove('active'));
@@ -327,7 +389,7 @@ function bindUI(){
     });
   });
 
-  // + Post em branco (vai direto pra agenda)
+  // + Post em branco (mantido)
   const btnBlank = document.getElementById('btnNewBlankPost');
   if(btnBlank){
     btnBlank.onclick = ()=>{
@@ -342,7 +404,7 @@ function bindUI(){
     };
   }
 
-  // Análise — salvar / arquivar / excluir
+  // Análise — salvar / arquivar / excluir (inalterado)
   const btnSaveAnalysis = document.getElementById('btnSaveAnalysis');
   const btnArchivePost  = document.getElementById('btnArchivePost');
   const btnDeletePost   = document.getElementById('btnDeletePost');
@@ -382,7 +444,6 @@ function bindUI(){
   }
   if(btnDeletePost){
     btnDeletePost.onclick = ()=>{
-      // Limpa o formulário atual (só visual)
       ['anTitle','anDate','anViews','anLikes','anComments','anClicks','anNotes'].forEach(id=>{
         const el = document.getElementById(id); if(el) el.value='';
       });
@@ -393,9 +454,6 @@ function bindUI(){
   }
 }
 
-// ---------- UTIL ----------
-function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
-
 // ---------- BOOT ----------
 document.addEventListener('DOMContentLoaded', ()=>{
   try{ Data.load(); }catch(e){}
@@ -404,5 +462,5 @@ document.addEventListener('DOMContentLoaded', ()=>{
   renderDrafts();
   renderPlan();
   renderAnalysisRecent();
-  console.log('[themes] pronto');
+  console.log('[themes] pronto v6 (rascunhos inline)');
 });
